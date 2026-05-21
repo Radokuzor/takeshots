@@ -281,8 +281,8 @@ export default function AdminClient() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: articleForm.title,
-          slug: articleForm.slug,
+          title: articleForm.title || undefined,
+          slug: articleForm.slug || undefined,
           category: articleForm.category,
           city: articleForm.city,
           author: articleForm.author,
@@ -294,12 +294,12 @@ export default function AdminClient() {
       if (!res.ok) throw new Error(data.error ?? "Failed to generate article");
       setArticles((prev) => [data as Article, ...prev]);
       setArticleForm(BLANK_ARTICLE_FORM);
-      setArticleMsg("Article generated and saved!");
+      setArticleMsg(`Saved: "${(data as Article).title}"`);
     } catch (e) {
       setArticleMsg((e as Error).message);
     }
     setGeneratingArticle(false);
-    setTimeout(() => setArticleMsg(""), 6000);
+    setTimeout(() => setArticleMsg(""), 8000);
   }
 
   return (
@@ -613,11 +613,13 @@ export default function AdminClient() {
               {/* Title / Slug / Category row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1 sm:col-span-2">
-                  <label className="text-xs font-bold uppercase tracking-wide text-[#1A1A1A]/60">Article Title *</label>
+                  <label className="text-xs font-bold uppercase tracking-wide text-[#1A1A1A]/60">
+                    Article Title
+                    <span className="text-[#1A1A1A]/40 normal-case font-normal ml-1">(leave blank to auto-generate)</span>
+                  </label>
                   <input
                     type="text"
-                    required
-                    placeholder="Top 10 Bachelorette Party Gifts for 2025"
+                    placeholder="Auto-generated from prompt"
                     value={articleForm.title}
                     onChange={(e) =>
                       setArticleForm((prev) => ({ ...prev, title: e.target.value, slug: prev.slug || toSlug(e.target.value) }))
@@ -626,11 +628,13 @@ export default function AdminClient() {
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold uppercase tracking-wide text-[#1A1A1A]/60">Slug *</label>
+                  <label className="text-xs font-bold uppercase tracking-wide text-[#1A1A1A]/60">
+                    Slug
+                    <span className="text-[#1A1A1A]/40 normal-case font-normal ml-1">(auto-generated if blank)</span>
+                  </label>
                   <input
                     type="text"
-                    required
-                    placeholder="top-10-bachelorette-gifts"
+                    placeholder="auto-generated-slug"
                     value={articleForm.slug}
                     onChange={(e) => setArticleForm((prev) => ({ ...prev, slug: e.target.value }))}
                     className="px-3 py-2 border border-[#EDEBE5] rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#FF6B35]"
