@@ -44,11 +44,9 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
 
         {/* Details */}
         <div className="flex-1">
-          {product.occasion_tag && (
-            <span className="tag mb-3 inline-block">
-              {OCCASION_LABELS[product.occasion_tag]}
-            </span>
-          )}
+          {(product.occasion_tags?.length ? product.occasion_tags : product.occasion_tag ? [product.occasion_tag] : []).map((t) => (
+            <span key={t} className="tag mb-2 mr-1 inline-block">{OCCASION_LABELS[t]}</span>
+          ))}
           <h2 className="font-black text-2xl mb-2">{product.name}</h2>
           {product.description && (
             <p className="text-[#1A1A1A]/70 text-sm leading-relaxed mb-4">{product.description}</p>
@@ -105,41 +103,41 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
 
   return (
     <div className="card group">
-      <div className="aspect-square overflow-hidden bg-[#EDEBE5]">
-        {product.photo_url ? (
-          <Image
-            src={product.photo_url}
-            alt={product.name}
-            width={400}
-            height={400}
-            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-[#1A1A1A]/20 text-sm">No image</div>
-        )}
-      </div>
-      <div className="p-4">
-        {product.occasion_tag && (
-          <span className="tag mb-2 inline-block text-[10px]">
-            {OCCASION_LABELS[product.occasion_tag]}
-          </span>
-        )}
-        <h3 className="font-bold text-sm leading-snug mb-1">{product.name}</h3>
-        <p className="text-[#FF6B35] font-black text-lg mb-3">${product.price.toFixed(2)}</p>
-        <div className="flex gap-2">
-          <button
-            onClick={() => addItem(product)}
-            className="flex-1 btn-primary text-sm py-2"
-          >
-            <ShoppingCart size={14} className="mr-1.5" /> Add to Cart
-          </button>
-          <Link
-            href={`/gifts/${product.occasion_tag ?? "all"}`}
-            className="btn-ghost text-sm py-2 px-3"
-          >
-            Guide
-          </Link>
+      <Link href={`/shop/${product.id}`} className="block">
+        <div className="aspect-square overflow-hidden bg-[#EDEBE5]">
+          {product.photo_url ? (
+            <Image
+              src={product.photo_url}
+              alt={product.name}
+              width={400}
+              height={400}
+              className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-[#1A1A1A]/20 text-sm">No image</div>
+          )}
         </div>
+        <div className="p-4 pb-2">
+          {(product.occasion_tags?.length ? product.occasion_tags : product.occasion_tag ? [product.occasion_tag] : []).map((t) => (
+            <span key={t} className="tag mb-1 mr-1 inline-block text-[10px]">{OCCASION_LABELS[t]}</span>
+          ))}
+          <h3 className="font-bold text-sm leading-snug mb-1">{product.name}</h3>
+          <p className="text-[#FF6B35] font-black text-lg mb-3">${product.price.toFixed(2)}</p>
+        </div>
+      </Link>
+      <div className="px-4 pb-4 flex gap-2">
+        <button
+          onClick={() => addItem(product)}
+          className="flex-1 btn-primary text-sm py-2"
+        >
+          <ShoppingCart size={14} className="mr-1.5" /> Add to Cart
+        </button>
+        <Link
+          href={`/shop/${product.id}`}
+          className="btn-ghost text-sm py-2 px-3"
+        >
+          Details
+        </Link>
       </div>
     </div>
   );

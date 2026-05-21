@@ -2,13 +2,17 @@
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import Link from "next/link";
-import type { Article } from "@/lib/types";
+import type { Article, Product } from "@/lib/types";
 import EmailCapture from "./EmailCapture";
+import ProductEmbed from "./ProductEmbed";
 
 interface Props {
   article: Article;
   relatedArticles: Article[];
+  embeddedProducts?: Product[];
 }
+
+const PRODUCT_PLACEHOLDER = /(\{\{product:[a-f0-9-]+\}\})/g;
 
 function useTOC(body: string) {
   const headings: { id: string; text: string; level: number }[] = [];
@@ -24,10 +28,51 @@ function useTOC(body: string) {
   return headings;
 }
 
-export default function ArticlePage({ article, relatedArticles }: Props) {
+const mdComponents: React.ComponentProps<typeof ReactMarkdown>["components"] = {
+  h2: ({ children }) => {
+    const text = String(children);
+    const id = text.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    return <h2 id={id} className="font-black text-2xl uppercase mt-10 mb-4">{children}</h2>;
+  },
+  h3: ({ children }) => {
+    const text = String(children);
+    const id = text.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    return <h3 id={id} className="font-bold text-xl mt-6 mb-3">{children}</h3>;
+  },
+  p: ({ children }) => <p className="text-[#1A1A1A]/80 leading-relaxed mb-4">{children}</p>,
+  ul: ({ children }) => <ul className="list-disc pl-6 mb-4 flex flex-col gap-1.5">{children}</ul>,
+  a: ({ href, children }) => (
+    <a href={href} className="text-[#FF6B35] font-semibold hover:underline">{children}</a>
+  ),
+};
+
+function ArticleBody({ body, productMap }: { body: string; productMap: Map<string, Product> }) {
+  const parts = body.split(PRODUCT_PLACEHOLDER);
+
+  return (
+    <>
+      {parts.map((part, i) => {
+        const match = part.match(/^\{\{product:([a-f0-9-]+)\}\}$/);
+        if (match) {
+          const product = productMap.get(match[1]);
+          return product ? <ProductEmbed key={i} product={product} /> : null;
+        }
+        if (!part.trim()) return null;
+        return (
+          <ReactMarkdown key={i} components={mdComponents}>
+            {part}
+          </ReactMarkdown>
+        );
+      })}
+    </>
+  );
+}
+
+export default function ArticlePage({ article, relatedArticles, embeddedProducts = [] }: Props) {
   const toc = useTOC(article.body ?? "");
   const [showPopup, setShowPopup] = useState(false);
   const popupShown = useRef(false);
+  const productMap = new Map(embeddedProducts.map((p) => [p.id, p]));
 
   useEffect(() => {
     const handleScroll = () => {
@@ -82,27 +127,7 @@ export default function ArticlePage({ article, relatedArticles }: Props) {
 
         {/* Article body */}
         <article className="flex-1 min-w-0 prose prose-neutral max-w-none">
-          <ReactMarkdown
-            components={{
-              h2: ({ children }) => {
-                const text = String(children);
-                const id = text.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-                return <h2 id={id} className="font-black text-2xl uppercase mt-10 mb-4">{children}</h2>;
-              },
-              h3: ({ children }) => {
-                const text = String(children);
-                const id = text.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-                return <h3 id={id} className="font-bold text-xl mt-6 mb-3">{children}</h3>;
-              },
-              p: ({ children }) => <p className="text-[#1A1A1A]/80 leading-relaxed mb-4">{children}</p>,
-              ul: ({ children }) => <ul className="list-disc pl-6 mb-4 flex flex-col gap-1.5">{children}</ul>,
-              a: ({ href, children }) => (
-                <a href={href} className="text-[#FF6B35] font-semibold hover:underline">{children}</a>
-              ),
-            }}
-          >
-            {article.body ?? ""}
-          </ReactMarkdown>
+          <ArticleBody body={article.body ?? ""} productMap={productMap} />
         </article>
       </div>
 

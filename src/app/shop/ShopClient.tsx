@@ -22,7 +22,11 @@ export default function ShopClient({ products, initialOccasion }: Props) {
   const [active, setActive] = useState<OccasionTag | "all">(initialOccasion);
 
   const filtered =
-    active === "all" ? products : products.filter((p) => p.occasion_tag === active);
+    active === "all"
+      ? products
+      : products.filter((p) =>
+          p.occasion_tags?.includes(active as OccasionTag) || p.occasion_tag === active
+        );
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">

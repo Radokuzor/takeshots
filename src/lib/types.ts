@@ -14,7 +14,9 @@ export interface Product {
   description: string | null;
   price: number;
   photo_url: string | null;
+  photo_urls: string[] | null;
   occasion_tag: OccasionTag | null;
+  occasion_tags: OccasionTag[] | null;
   amazon_asin: string | null;
   pros: string[] | null;
   cons: string[] | null;
