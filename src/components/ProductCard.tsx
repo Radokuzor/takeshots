@@ -2,8 +2,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
+import { loadStripe } from "@stripe/stripe-js";
 import type { Product } from "@/lib/types";
 import { useCart } from "@/lib/cart";
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 const OCCASION_LABELS: Record<string, string> = {
   bachelorette: "Bachelorette",
@@ -21,6 +24,19 @@ interface Props {
 
 export default function ProductCard({ product, variant = "grid" }: Props) {
   const { addItem } = useCart();
+
+  async function buyNow() {
+    addItem(product);
+    const items = useCart.getState().items;
+    const res = await fetch("/api/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items }),
+    });
+    const { sessionId } = await res.json();
+    const stripe = await stripePromise;
+    await stripe?.redirectToCheckout({ sessionId });
+  }
 
   if (variant === "guide") {
     return (
@@ -92,7 +108,7 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
             <button onClick={() => addItem(product)} className="btn-primary">
               Add to Cart
             </button>
-            <button onClick={() => addItem(product)} className="btn-ghost">
+            <button onClick={buyNow} className="btn-ghost">
               Buy Now
             </button>
           </div>

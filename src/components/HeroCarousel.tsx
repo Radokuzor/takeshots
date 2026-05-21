@@ -1,10 +1,12 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { ChevronLeft, ChevronRight, ShoppingCart } from "lucide-react";
+import { loadStripe } from "@stripe/stripe-js";
 import { useCart } from "@/lib/cart";
 import type { Product } from "@/lib/types";
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 const INTERVAL = 4000;
 
@@ -13,6 +15,19 @@ export default function HeroCarousel({ products }: { products: Product[] }) {
   const [paused, setPaused] = useState(false);
   const [animating, setAnimating] = useState(false);
   const addItem = useCart((s) => s.addItem);
+
+  async function buyNow(product: Product) {
+    addItem(product);
+    const items = useCart.getState().items;
+    const res = await fetch("/api/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items }),
+    });
+    const { sessionId } = await res.json();
+    const stripe = await stripePromise;
+    await stripe?.redirectToCheckout({ sessionId });
+  }
 
   const go = useCallback(
     (next: number) => {
@@ -81,12 +96,12 @@ export default function HeroCarousel({ products }: { products: Product[] }) {
         </h3>
         <p className="text-[#FF6B35] font-bold text-lg mb-4">${product.price.toFixed(2)}</p>
         <div className="flex gap-2 flex-wrap">
-          <Link
-            href={`/shop/${product.id}`}
+          <button
+            onClick={() => buyNow(product)}
             className="px-4 py-2 rounded-pill bg-gradient-to-r from-[#FF6B35] to-[#FF4500] text-white font-bold text-sm hover:opacity-90 transition-opacity"
           >
             Buy Now
-          </Link>
+          </button>
           <button
             onClick={() => addItem(product)}
             className="flex items-center gap-1.5 px-4 py-2 rounded-pill bg-white/20 backdrop-blur-sm text-white font-bold text-sm border border-white/30 hover:bg-white/30 transition-colors"

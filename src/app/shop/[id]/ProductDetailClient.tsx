@@ -2,8 +2,11 @@
 import { useState } from "react";
 import Image from "next/image";
 import { ShoppingCart } from "lucide-react";
+import { loadStripe } from "@stripe/stripe-js";
 import type { Product } from "@/lib/types";
 import { useCart } from "@/lib/cart";
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 const OCCASION_LABELS: Record<string, string> = {
   bachelorette: "Bachelorette",
@@ -16,6 +19,19 @@ const OCCASION_LABELS: Record<string, string> = {
 
 export default function ProductDetailClient({ product }: { product: Product }) {
   const { addItem } = useCart();
+
+  async function buyNow() {
+    addItem(product);
+    const items = useCart.getState().items;
+    const res = await fetch("/api/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items }),
+    });
+    const { sessionId } = await res.json();
+    const stripe = await stripePromise;
+    await stripe?.redirectToCheckout({ sessionId });
+  }
   const allImages = product.photo_urls?.length
     ? product.photo_urls
     : product.photo_url
@@ -108,16 +124,9 @@ export default function ProductDetailClient({ product }: { product: Product }) {
           <button onClick={() => addItem(product)} className="btn-primary">
             <ShoppingCart size={16} className="mr-2" /> Add to Cart
           </button>
-          {product.amazon_asin && (
-            <a
-              href={`https://www.amazon.com/dp/${product.amazon_asin}`}
-              target="_blank"
-              rel="noopener noreferrer sponsored"
-              className="btn-ghost"
-            >
-              View on Amazon
-            </a>
-          )}
+          <button onClick={buyNow} className="btn-ghost">
+            Buy Now
+          </button>
         </div>
       </div>
     </div>
