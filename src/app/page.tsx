@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import type { Product } from "@/lib/types";
 import ProductCard from "@/components/ProductCard";
 import EmailCapture from "@/components/EmailCapture";
+import HeroCarousel from "@/components/HeroCarousel";
 
 export const metadata: Metadata = {
   title: "TakeShots — The Best Gifts for Every Occasion",
@@ -40,8 +40,30 @@ async function getFeaturedProducts(): Promise<Product[]> {
   return (data as Product[]) ?? [];
 }
 
+async function getCarouselProducts(): Promise<Product[]> {
+  // Prefer featured products; fall back to newest products if none are featured
+  const { data: featured } = await supabase
+    .from("products")
+    .select("*")
+    .eq("featured", true)
+    .not("photo_url", "is", null)
+    .limit(6);
+  if (featured?.length) return featured as Product[];
+
+  const { data: fallback } = await supabase
+    .from("products")
+    .select("*")
+    .not("photo_url", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(6);
+  return (fallback as Product[]) ?? [];
+}
+
 export default async function HomePage() {
-  const featured = await getFeaturedProducts();
+  const [featured, carouselProducts] = await Promise.all([
+    getFeaturedProducts(),
+    getCarouselProducts(),
+  ]);
 
   return (
     <>
@@ -64,11 +86,8 @@ export default async function HomePage() {
             </Link>
           </div>
         </div>
-        {/* Hero visual placeholder — replace with lifestyle photo */}
         <div className="hidden md:block">
-          <div className="aspect-[4/3] rounded-3xl bg-[#EDEBE5] flex items-center justify-center text-[#1A1A1A]/20 text-sm">
-            Hero lifestyle photo
-          </div>
+          <HeroCarousel products={carouselProducts} />
         </div>
       </section>
 
