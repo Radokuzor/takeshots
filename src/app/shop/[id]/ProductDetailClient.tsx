@@ -1,15 +1,16 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { ShoppingCart, Loader2, Check } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
-import type { Product } from "@/lib/types";
+import type { Product, Review } from "@/lib/types";
 import { useCart } from "@/lib/cart";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 const OCCASION_LABELS: Record<string, string> = {
-  bachelorette: "Bachelorette",
+  bachelorette: "Bachelorette / Hers",
+  bachelor: "Bachelor / His",
   wedding: "Wedding",
   birthday: "Birthday",
   anniversary: "Anniversary",
@@ -21,6 +22,17 @@ export default function ProductDetailClient({ product }: { product: Product }) {
   const { addItem } = useCart();
   const [buyingNow, setBuyingNow] = useState(false);
   const [added, setAdded] = useState(false);
+  const [reviews, setReviews] = useState<Review[]>(product.reviews ?? []);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+
+  useEffect(() => {
+    if ((product.reviews?.length ?? 0) > 0 || !product.amazon_asin) return;
+    setLoadingReviews(true);
+    fetch(`/api/products/${product.id}/enrich`)
+      .then((r) => r.json())
+      .then((data) => { if (data.reviews?.length) setReviews(data.reviews); })
+      .finally(() => setLoadingReviews(false));
+  }, [product.id, product.amazon_asin, product.reviews]);
 
   async function buyNow() {
     setBuyingNow(true);
@@ -131,6 +143,28 @@ export default function ProductDetailClient({ product }: { product: Product }) {
             )}
           </div>
         ) : null}
+
+        {/* Reviews */}
+        {(reviews.length > 0 || loadingReviews) && (
+          <div className="mb-6">
+            <p className="font-bold text-sm mb-3">What Customers Are Saying</p>
+            {loadingReviews ? (
+              <p className="text-sm text-[#1A1A1A]/40">Loading reviews…</p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {reviews.slice(0, 3).map((r, i) => (
+                  <div key={i} className="p-3 bg-[#F5F4F0] rounded-xl">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[#FF6B35] font-bold text-sm">{"★".repeat(Math.round(parseFloat(r.stars) || 5))}</span>
+                      {r.title && <span className="font-semibold text-sm">{r.title}</span>}
+                    </div>
+                    {r.body && <p className="text-sm text-[#1A1A1A]/70 leading-relaxed">{r.body}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-3">
           <button

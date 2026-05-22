@@ -37,10 +37,22 @@ export async function POST(req: NextRequest) {
 
   const productCatalog = products.length
     ? `\n\nProducts to feature (embed each using its exact placeholder):\n${products
-        .map(
-          (p) =>
-            `Placeholder: {{product:${p.id}}}\nName: ${p.name}\nPrice: $${p.price.toFixed(2)}\nDescription: ${p.description ?? "—"}`
-        )
+        .map((p) => {
+          const lines = [
+            `Placeholder: {{product:${p.id}}}`,
+            `Name: ${p.name}`,
+            `Price: $${p.price.toFixed(2)}`,
+            `Description: ${p.description ?? "—"}`,
+          ];
+          if (p.key_points?.length) lines.push(`Key points: ${p.key_points.join(" | ")}`);
+          if (p.pros?.length) lines.push(`Pros: ${p.pros.join(" | ")}`);
+          if (p.cons?.length) lines.push(`Cons: ${p.cons.join(" | ")}`);
+          if (p.reviews?.length) {
+            const top = p.reviews.slice(0, 3).map(r => `[${r.stars}★] ${r.title}${r.body ? ": " + r.body : ""}`).join("\n  ");
+            lines.push(`Top customer reviews:\n  ${top}`);
+          }
+          return lines.join("\n");
+        })
         .join("\n\n")}`
     : "";
 

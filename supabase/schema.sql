@@ -9,12 +9,13 @@ create table if not exists products (
   price            numeric(10, 2) not null,
   photo_url        text,
   photo_urls       text[] default '{}',
-  occasion_tag     text check (occasion_tag in ('bachelorette','wedding','birthday','anniversary','game_night','holiday')),
+  occasion_tag     text check (occasion_tag in ('bachelorette','bachelor','wedding','birthday','anniversary','game_night','holiday')),
   occasion_tags    text[] default '{}',
   amazon_asin      text,
   pros             text[],
   cons             text[],
   key_points       text[],
+  reviews          jsonb default '[]',
   featured         boolean default false,
   created_at       timestamptz default now()
 );

@@ -43,9 +43,10 @@ function extractAmazonContent(html: string): string {
   return sections.join("\n\n") || html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 3000);
 }
 
-function extractReviews(html: string): string {
-  const reviews: string[] = [];
+interface ParsedReview { stars: string; title: string; body: string; }
 
+function extractReviews(html: string): ParsedReview[] {
+  const reviews: ParsedReview[] = [];
   const reviewBlocks = html.match(/data-hook="review"[\s\S]*?(?=data-hook="review"|<\/div>\s*<\/div>\s*<\/div>\s*<\/div>\s*<\/div>\s*<div id="cm_cr-review_list")/g) ?? [];
 
   for (const block of reviewBlocks.slice(0, 6)) {
@@ -57,12 +58,10 @@ function extractReviews(html: string): string {
     const title = titleMatch?.[1]?.trim() ?? "";
     const body = bodyMatch?.[1]?.replace(/<[^>]+>/g, "").trim().slice(0, 300) ?? "";
 
-    if (title || body) {
-      reviews.push(`[${stars}★] ${title}${body ? ": " + body : ""}`);
-    }
+    if (title || body) reviews.push({ stars, title, body });
   }
 
-  return reviews.join("\n\n").slice(0, 2000);
+  return reviews;
 }
 
 function extractAllImageUrls(html: string): string[] {
@@ -165,6 +164,7 @@ export async function POST(req: NextRequest) {
   }
 
   const reviews = extractReviews(reviewsHtml);
+  const reviewsText = reviews.map(r => `[${r.stars}★] ${r.title}${r.body ? ": " + r.body : ""}`).join("\n\n").slice(0, 2000);
 
   // Extract all image URLs and run Claude in parallel
   const amazon_image_urls = extractAllImageUrls(html);
@@ -186,7 +186,7 @@ Fields:
 - price: number | null (numeric price extracted from data, no $ sign)
 
 Product data:
-${content}${reviews ? `\n\nCustomer reviews (real buyer feedback — use these to write authentic pros/cons):\n${reviews}` : ""}`,
+${content}${reviewsText ? `\n\nCustomer reviews (real buyer feedback — use these to write authentic pros/cons):\n${reviewsText}` : ""}`,
         },
       ],
     }),
@@ -204,5 +204,6 @@ ${content}${reviews ? `\n\nCustomer reviews (real buyer feedback — use these t
     amazon_asin: asin,
     amazon_image_urls,
     amazon_image_url: amazon_image_urls[0] ?? null,
+    reviews,
   });
 }

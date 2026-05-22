@@ -1,5 +1,12 @@
+export interface Review {
+  stars: string;
+  title: string;
+  body: string;
+}
+
 export type OccasionTag =
   | "bachelorette"
+  | "bachelor"
   | "wedding"
   | "birthday"
   | "anniversary"
@@ -21,6 +28,7 @@ export interface Product {
   pros: string[] | null;
   cons: string[] | null;
   key_points: string[] | null;
+  reviews: Review[] | null;
   featured: boolean;
   created_at: string;
 }

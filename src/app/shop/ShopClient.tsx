@@ -5,7 +5,8 @@ import ProductCard from "@/components/ProductCard";
 
 const FILTERS: { label: string; value: OccasionTag | "all" }[] = [
   { label: "All", value: "all" },
-  { label: "Bachelorette", value: "bachelorette" },
+  { label: "Bachelorette / Hers", value: "bachelorette" },
+  { label: "Bachelor / His", value: "bachelor" },
   { label: "Wedding", value: "wedding" },
   { label: "Birthday", value: "birthday" },
   { label: "Anniversary", value: "anniversary" },

@@ -3,14 +3,14 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Trash2, Pencil, Sparkles, Link, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import type { Product, Article, OccasionTag, ArticleCategory } from "@/lib/types";
+import type { Product, Article, OccasionTag, ArticleCategory, Review } from "@/lib/types";
 
 const OCCASIONS: OccasionTag[] = [
-  "bachelorette", "wedding", "birthday", "anniversary", "game_night", "holiday",
+  "bachelorette", "bachelor", "wedding", "birthday", "anniversary", "game_night", "holiday",
 ];
 
 const OCCASION_LABELS: Record<OccasionTag, string> = {
-  bachelorette: "Bachelorette", wedding: "Wedding", birthday: "Birthday",
+  bachelorette: "Bachelorette / Hers", bachelor: "Bachelor / His", wedding: "Wedding", birthday: "Birthday",
   anniversary: "Anniversary", game_night: "Game Night", holiday: "Holiday",
 };
 
@@ -18,7 +18,8 @@ const BLANK_PRODUCT = {
   name: "", description: "", price: 0,
   occasion_tags: [] as OccasionTag[],
   amazon_asin: "", pros: "", cons: "", key_points: "", featured: false,
-  existing_photo_url: "" as string, // keeps current URL when editing with no new upload
+  existing_photo_url: "" as string,
+  reviews: [] as Review[],
 };
 
 const BLANK_ARTICLE_FORM = {
@@ -109,6 +110,7 @@ export default function AdminClient() {
       key_points: (p.key_points ?? []).join(", "),
       featured: p.featured,
       existing_photo_url: p.photo_url ?? "",
+      reviews: p.reviews ?? [],
     });
     setPhotoFiles([]);
     setPhotoPreviews(p.photo_urls?.length ? p.photo_urls : p.photo_url ? [p.photo_url] : []);
@@ -147,6 +149,7 @@ export default function AdminClient() {
         cons: Array.isArray(data.cons) ? data.cons.join(", ") : (data.cons ?? prev.cons),
         price: data.price ?? prev.price,
         amazon_asin: data.amazon_asin ?? prev.amazon_asin,
+        reviews: Array.isArray(data.reviews) ? data.reviews : prev.reviews,
       }));
       const imgUrls: string[] = data.amazon_image_urls ?? (data.amazon_image_url ? [data.amazon_image_url] : []);
       setAllAmazonImageUrls(imgUrls);
@@ -212,6 +215,7 @@ export default function AdminClient() {
       cons: form.cons ? form.cons.split(",").map((s) => s.trim()) : [],
       key_points: form.key_points ? form.key_points.split(",").map((s) => s.trim()) : [],
       featured: form.featured,
+      ...(form.reviews.length ? { reviews: form.reviews } : {}),
     };
     if (photo_urls !== undefined) payload.photo_urls = photo_urls;
     if (amazon_image_urls !== undefined) payload.amazon_image_urls = amazon_image_urls;
