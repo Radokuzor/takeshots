@@ -23,6 +23,14 @@ export async function POST(req: NextRequest) {
     success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/shop?success=1`,
     cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/shop?cancelled=1`,
     allow_promotion_codes: true,
+    
+    // 👇 ADDED THIS TO FORCE SHIPPING ADDRESS COLLECTION 👇
+    shipping_address_collection: {
+      allowed_countries: ["US", "CA"], // Add any country codes you want to allow shipping to
+    },
+
+    // 👇 OPTIONAL: Forces the billing zip code to match for fraud prevention 👇
+    billing_address_collection: "required", 
   });
 
   return NextResponse.json({ sessionId: session.id });

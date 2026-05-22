@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, ShoppingCart } from "lucide-react";
+import { ChevronLeft, ChevronRight, ShoppingCart, Loader2, Check } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
 import { useCart } from "@/lib/cart";
 import type { Product } from "@/lib/types";
@@ -14,19 +14,30 @@ export default function HeroCarousel({ products }: { products: Product[] }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [animating, setAnimating] = useState(false);
+  const [buyingNow, setBuyingNow] = useState(false);
+  const [added, setAdded] = useState(false);
   const addItem = useCart((s) => s.addItem);
 
   async function buyNow(product: Product) {
+    setBuyingNow(true);
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: [{ product, quantity: 1 }] }),
+      });
+      const { sessionId } = await res.json();
+      const stripe = await stripePromise;
+      await stripe?.redirectToCheckout({ sessionId });
+    } finally {
+      setBuyingNow(false);
+    }
+  }
+
+  function handleAddToCart(product: Product) {
     addItem(product);
-    const items = useCart.getState().items;
-    const res = await fetch("/api/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items }),
-    });
-    const { sessionId } = await res.json();
-    const stripe = await stripePromise;
-    await stripe?.redirectToCheckout({ sessionId });
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
   }
 
   const go = useCallback(
@@ -98,15 +109,17 @@ export default function HeroCarousel({ products }: { products: Product[] }) {
         <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => buyNow(product)}
-            className="px-4 py-2 rounded-pill bg-gradient-to-r from-[#FF6B35] to-[#FF4500] text-white font-bold text-sm hover:opacity-90 transition-opacity"
+            disabled={buyingNow}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-pill bg-gradient-to-r from-[#FF6B35] to-[#FF4500] text-white font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            Buy Now
+            {buyingNow ? <><Loader2 size={14} className="animate-spin" /> Processing…</> : "Buy Now"}
           </button>
           <button
-            onClick={() => addItem(product)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-pill bg-white/20 backdrop-blur-sm text-white font-bold text-sm border border-white/30 hover:bg-white/30 transition-colors"
+            onClick={() => handleAddToCart(product)}
+            disabled={added}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-pill bg-white/20 backdrop-blur-sm text-white font-bold text-sm border border-white/30 hover:bg-white/30 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            <ShoppingCart size={14} /> Add to Cart
+            {added ? <><Check size={14} /> Added!</> : <><ShoppingCart size={14} /> Add to Cart</>}
           </button>
         </div>
       </div>

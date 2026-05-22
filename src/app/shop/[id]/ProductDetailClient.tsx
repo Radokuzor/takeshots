@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Image from "next/image";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, Loader2, Check } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
 import type { Product } from "@/lib/types";
 import { useCart } from "@/lib/cart";
@@ -19,19 +19,31 @@ const OCCASION_LABELS: Record<string, string> = {
 
 export default function ProductDetailClient({ product }: { product: Product }) {
   const { addItem } = useCart();
+  const [buyingNow, setBuyingNow] = useState(false);
+  const [added, setAdded] = useState(false);
 
   async function buyNow() {
-    addItem(product);
-    const items = useCart.getState().items;
-    const res = await fetch("/api/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items }),
-    });
-    const { sessionId } = await res.json();
-    const stripe = await stripePromise;
-    await stripe?.redirectToCheckout({ sessionId });
+    setBuyingNow(true);
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: [{ product, quantity: 1 }] }),
+      });
+      const { sessionId } = await res.json();
+      const stripe = await stripePromise;
+      await stripe?.redirectToCheckout({ sessionId });
+    } finally {
+      setBuyingNow(false);
+    }
   }
+
+  function handleAddToCart() {
+    addItem(product);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
+  }
+
   const allImages = product.photo_urls?.length
     ? product.photo_urls
     : product.photo_url
@@ -121,11 +133,19 @@ export default function ProductDetailClient({ product }: { product: Product }) {
         ) : null}
 
         <div className="flex flex-wrap gap-3">
-          <button onClick={() => addItem(product)} className="btn-primary">
-            <ShoppingCart size={16} className="mr-2" /> Add to Cart
+          <button
+            onClick={handleAddToCart}
+            disabled={added}
+            className="btn-primary flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {added ? <><Check size={16} /> Added!</> : <><ShoppingCart size={16} /> Add to Cart</>}
           </button>
-          <button onClick={buyNow} className="btn-ghost">
-            Buy Now
+          <button
+            onClick={buyNow}
+            disabled={buyingNow}
+            className="btn-ghost flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {buyingNow ? <><Loader2 size={16} className="animate-spin" /> Processing…</> : "Buy Now"}
           </button>
         </div>
       </div>

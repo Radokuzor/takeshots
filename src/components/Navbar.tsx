@@ -18,7 +18,7 @@ export default function Navbar() {
   const itemCount = items.reduce((s, i) => s + i.quantity, 0);
 
   return (
-    <header className="sticky top-0 z-50 bg-[#F5F4F0]/95 backdrop-blur-sm border-b border-[#EDEBE5]">
+    <header className="sticky top-0 z-50 bg-white backdrop-blur-sm border-b-2 border-[#FF6B35]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
         {/* Logo */}
         <Link href="/" className="font-black text-xl tracking-tight uppercase">
@@ -70,7 +70,7 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {open && (
-        <nav className="md:hidden bg-[#F5F4F0] border-t border-[#EDEBE5] px-4 pb-4">
+        <nav className="md:hidden bg-white border-t border-[#EDEBE5] px-4 pb-4">
           <div className="flex flex-col gap-4 pt-4">
             {links.map((l) => (
               <Link

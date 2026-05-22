@@ -1,8 +1,9 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, Loader2, Check } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
+import { useState } from "react";
 import type { Product } from "@/lib/types";
 import { useCart } from "@/lib/cart";
 
@@ -24,18 +25,29 @@ interface Props {
 
 export default function ProductCard({ product, variant = "grid" }: Props) {
   const { addItem } = useCart();
+  const [buyingNow, setBuyingNow] = useState(false);
+  const [added, setAdded] = useState(false);
 
   async function buyNow() {
+    setBuyingNow(true);
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: [{ product, quantity: 1 }] }),
+      });
+      const { sessionId } = await res.json();
+      const stripe = await stripePromise;
+      await stripe?.redirectToCheckout({ sessionId });
+    } finally {
+      setBuyingNow(false);
+    }
+  }
+
+  function handleAddToCart() {
     addItem(product);
-    const items = useCart.getState().items;
-    const res = await fetch("/api/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items }),
-    });
-    const { sessionId } = await res.json();
-    const stripe = await stripePromise;
-    await stripe?.redirectToCheckout({ sessionId });
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
   }
 
   if (variant === "guide") {
@@ -105,12 +117,22 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
           <p className="text-2xl font-black text-[#FF6B35] mb-4">${product.price.toFixed(2)}</p>
 
           <div className="flex flex-wrap gap-3">
-            <button onClick={() => addItem(product)} className="btn-primary">
-              Add to Cart
+            <button onClick={buyNow} disabled={buyingNow} className="btn-primary flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed">
+              {buyingNow ? <><Loader2 size={14} className="animate-spin" /> Processing…</> : "Buy Now"}
             </button>
-            <button onClick={buyNow} className="btn-ghost">
-              Buy Now
+            <button
+              onClick={handleAddToCart}
+              disabled={added}
+              className="flex items-center gap-1.5 px-5 py-3 rounded-pill border-2 border-[#1A1A1A] text-sm font-bold hover:bg-[#1A1A1A] hover:text-white transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {added ? <><Check size={14} /> Added!</> : <><ShoppingCart size={14} /> Add to Cart</>}
             </button>
+            <Link
+              href={`/shop/${product.id}`}
+              className="flex items-center px-5 py-3 rounded-pill border-2 border-[#EDEBE5] text-sm font-bold hover:border-[#FF6B35] transition-colors"
+            >
+              View Details
+            </Link>
           </div>
         </div>
       </div>
@@ -141,19 +163,29 @@ export default function ProductCard({ product, variant = "grid" }: Props) {
           <p className="text-[#FF6B35] font-black text-lg mb-3">${product.price.toFixed(2)}</p>
         </div>
       </Link>
-      <div className="px-4 pb-4 flex gap-2">
+      <div className="px-4 pb-4 flex flex-col gap-2">
         <button
-          onClick={() => addItem(product)}
-          className="flex-1 btn-primary text-sm py-2"
+          onClick={buyNow}
+          disabled={buyingNow}
+          className="w-full btn-primary text-sm py-2 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
         >
-          <ShoppingCart size={14} className="mr-1.5" /> Add to Cart
+          {buyingNow ? <><Loader2 size={13} className="animate-spin" /> Processing…</> : "Buy Now"}
         </button>
-        <Link
-          href={`/shop/${product.id}`}
-          className="btn-ghost text-sm py-2 px-3"
-        >
-          Details
-        </Link>
+        <div className="flex gap-2">
+          <button
+            onClick={handleAddToCart}
+            disabled={added}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-pill border-2 border-[#EDEBE5] text-sm font-bold hover:border-[#FF6B35] transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {added ? <><Check size={13} /> Added!</> : <><ShoppingCart size={13} /> Add to Cart</>}
+          </button>
+          <Link
+            href={`/shop/${product.id}`}
+            className="flex-1 flex items-center justify-center py-2 rounded-pill border-2 border-[#EDEBE5] text-sm font-bold hover:border-[#FF6B35] transition-colors"
+          >
+            View Details
+          </Link>
+        </div>
       </div>
     </div>
   );

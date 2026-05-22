@@ -1,13 +1,41 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingCart, ExternalLink } from "lucide-react";
-import { useCart } from "@/lib/cart";
+import { ShoppingCart, Loader2, Check } from "lucide-react";
+import { loadStripe } from "@stripe/stripe-js";
+import { useState } from "react";
 import type { Product } from "@/lib/types";
+import { useCart } from "@/lib/cart";
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 export default function ProductEmbed({ product }: { product: Product }) {
-  const addItem = useCart((s) => s.addItem);
+  const { addItem } = useCart();
   const img = product.photo_urls?.[0] ?? product.photo_url;
+  const [buyingNow, setBuyingNow] = useState(false);
+  const [added, setAdded] = useState(false);
+
+  async function buyNow() {
+    setBuyingNow(true);
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: [{ product, quantity: 1 }] }),
+      });
+      const { sessionId } = await res.json();
+      const stripe = await stripePromise;
+      await stripe?.redirectToCheckout({ sessionId });
+    } finally {
+      setBuyingNow(false);
+    }
+  }
+
+  function handleAddToCart() {
+    addItem(product);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
+  }
 
   return (
     <div className="my-6 flex gap-4 p-4 rounded-2xl border-2 border-[#EDEBE5] bg-white not-prose shadow-sm">
@@ -37,10 +65,18 @@ export default function ProductEmbed({ product }: { product: Product }) {
         )}
         <div className="flex flex-wrap gap-2 mt-3">
           <button
-            onClick={() => addItem(product)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-pill bg-gradient-to-r from-[#FF6B35] to-[#FF4500] text-white text-sm font-bold hover:opacity-90 transition-opacity"
+            onClick={buyNow}
+            disabled={buyingNow}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-pill bg-gradient-to-r from-[#FF6B35] to-[#FF4500] text-white text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            <ShoppingCart size={13} /> Add to Cart
+            {buyingNow ? <><Loader2 size={12} className="animate-spin" /> Processing…</> : "Buy Now"}
+          </button>
+          <button
+            onClick={handleAddToCart}
+            disabled={added}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-pill border-2 border-[#EDEBE5] text-sm font-bold hover:border-[#FF6B35] transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {added ? <><Check size={12} /> Added!</> : <><ShoppingCart size={12} /> Add to Cart</>}
           </button>
           <Link
             href={`/shop/${product.id}`}
@@ -48,16 +84,6 @@ export default function ProductEmbed({ product }: { product: Product }) {
           >
             View Details
           </Link>
-          {product.amazon_asin && (
-            <a
-              href={`https://www.amazon.com/dp/${product.amazon_asin}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 px-3 py-1.5 rounded-pill border-2 border-[#EDEBE5] text-sm font-bold hover:border-[#FF6B35] transition-colors"
-            >
-              <ExternalLink size={12} /> Buy on Amazon
-            </a>
-          )}
         </div>
       </div>
     </div>

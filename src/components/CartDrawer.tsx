@@ -1,6 +1,7 @@
 "use client";
-import { X, Minus, Plus, Trash2 } from "lucide-react";
+import { X, Minus, Plus, Trash2, Loader2 } from "lucide-react";
 import Image from "next/image";
+import { useState } from "react";
 import { useCart } from "@/lib/cart";
 import { loadStripe } from "@stripe/stripe-js";
 
@@ -8,16 +9,22 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 
 export default function CartDrawer() {
   const { items, open, setOpen, removeItem, updateQuantity, total, clearCart } = useCart();
+  const [checkingOut, setCheckingOut] = useState(false);
 
   async function handleCheckout() {
-    const res = await fetch("/api/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items }),
-    });
-    const { sessionId } = await res.json();
-    const stripe = await stripePromise;
-    await stripe?.redirectToCheckout({ sessionId });
+    setCheckingOut(true);
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items }),
+      });
+      const { sessionId } = await res.json();
+      const stripe = await stripePromise;
+      await stripe?.redirectToCheckout({ sessionId });
+    } finally {
+      setCheckingOut(false);
+    }
   }
 
   return (
@@ -98,8 +105,12 @@ export default function CartDrawer() {
               <span>Total</span>
               <span>${total().toFixed(2)}</span>
             </div>
-            <button onClick={handleCheckout} className="btn-primary w-full text-center">
-              Checkout
+            <button
+              onClick={handleCheckout}
+              disabled={checkingOut}
+              className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {checkingOut ? <><Loader2 size={16} className="animate-spin" /> Processing…</> : "Checkout"}
             </button>
             <button
               onClick={clearCart}
