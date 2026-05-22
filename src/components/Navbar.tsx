@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Menu, X, ShoppingCart } from "lucide-react";
 import { useCart } from "@/lib/cart";
+import GetDiscountButton from "@/components/GetDiscountButton";
 
 const links = [
   { label: "Play", href: "/play" },
@@ -53,9 +54,9 @@ export default function Navbar() {
             )}
           </button>
 
-          <Link href="/shop" className="btn-primary hidden sm:inline-flex text-sm py-2 px-5">
+          <GetDiscountButton className="btn-primary hidden sm:inline-flex text-sm py-2 px-5">
             Get 20% Off
-          </Link>
+          </GetDiscountButton>
 
           {/* Mobile hamburger */}
           <button
@@ -82,9 +83,9 @@ export default function Navbar() {
                 {l.label}
               </Link>
             ))}
-            <Link href="/shop" className="btn-primary text-center text-sm">
+            <GetDiscountButton className="btn-primary text-center text-sm w-full">
               Get 20% Off
-            </Link>
+            </GetDiscountButton>
           </div>
         </nav>
       )}

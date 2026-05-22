@@ -3,6 +3,8 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import type { Article } from "@/lib/types";
 
+export const revalidate = 60;
+
 export const metadata: Metadata = {
   title: "Blog — Gift Ideas & Party Tips",
   description: "Gift guides, party planning tips, and everything in between.",

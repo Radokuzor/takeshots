@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
+import DiscountModal from "@/components/DiscountModal";
 
 export const metadata: Metadata = {
   title: {
@@ -30,6 +31,7 @@ export default function RootLayout({
         <body className="bg-[#F5F4F0] text-[#1A1A1A] antialiased">
           <Navbar />
           <CartDrawer />
+          <DiscountModal />
           <main>{children}</main>
           <Footer />
         </body>

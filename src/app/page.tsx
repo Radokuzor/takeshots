@@ -5,6 +5,7 @@ import type { Product } from "@/lib/types";
 import ProductCard from "@/components/ProductCard";
 import EmailCapture from "@/components/EmailCapture";
 import HeroCarousel from "@/components/HeroCarousel";
+import GetDiscountButton from "@/components/GetDiscountButton";
 
 export const metadata: Metadata = {
   title: "TakeShots — The Best Gifts for Every Occasion",
@@ -40,6 +41,17 @@ async function getFeaturedProducts(): Promise<Product[]> {
   return (data as Product[]) ?? [];
 }
 
+async function getLatestBlogSlug(): Promise<string> {
+  const { data } = await supabase
+    .from("articles")
+    .select("slug")
+    .eq("category", "blog")
+    .order("last_updated", { ascending: false })
+    .limit(1)
+    .single();
+  return data?.slug ?? null;
+}
+
 async function getCarouselProducts(): Promise<Product[]> {
   // Prefer featured products; fall back to newest products if none are featured
   const { data: featured } = await supabase
@@ -60,9 +72,10 @@ async function getCarouselProducts(): Promise<Product[]> {
 }
 
 export default async function HomePage() {
-  const [featured, carouselProducts] = await Promise.all([
+  const [featured, carouselProducts, latestBlogSlug] = await Promise.all([
     getFeaturedProducts(),
     getCarouselProducts(),
+    getLatestBlogSlug(),
   ]);
 
   return (
@@ -78,10 +91,11 @@ export default async function HomePage() {
             gifts they&apos;ll actually love.
           </p>
           <div className="flex flex-wrap gap-4">
-            <Link href="/shop" className="btn-primary text-base">
-              Get 20% Off Your First Order
-            </Link>
-            <Link href="/gifts/bachelorette" className="btn-ghost text-base">
+            <GetDiscountButton className="btn-primary text-base" />
+            <Link
+              href={latestBlogSlug ? `/blog/${latestBlogSlug}` : "/blog"}
+              className="btn-ghost text-base"
+            >
               Browse Gift Guides
             </Link>
           </div>
