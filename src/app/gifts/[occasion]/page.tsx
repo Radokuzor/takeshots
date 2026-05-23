@@ -5,6 +5,11 @@ import type { OccasionTag, Product } from "@/lib/types";
 import ProductCard from "@/components/ProductCard";
 
 const OCCASION_META: Record<OccasionTag, { label: string; intro: string; keyword: string }> = {
+  bachelor: {
+    label: "Bachelor Party Gifts",
+    intro: "The ultimate bachelor party gift guide. Bold, fun, and groom-approved.",
+    keyword: "best bachelor party gifts",
+  },
   bachelorette: {
     label: "Bachelorette Party Gifts",
     intro: "The ultimate bachelorette party gift guide. Thoughtful, fun, and bride-approved.",
