@@ -8,6 +8,7 @@ import ProductCard from "@/components/ProductCard";
 import EmailCapture from "@/components/EmailCapture";
 import ProductGallery from "@/components/ProductGallery";
 import BrandCarousel from "@/components/BrandCarousel";
+import HomeBuyButton from "@/components/HomeBuyButton";
 
 export const metadata: Metadata = {
   title: "The Take V2 — Shot Holder & Straw | TakeShots",
@@ -23,7 +24,7 @@ export const metadata: Metadata = {
 const PRODUCT = {
   name: "TakeShots Take V2",
   tagline: "Take Shots Like Never Before",
-  price: 20.92,
+  price: 29.99,
   rating: 4.2,
   reviewCount: 300,
   color: "Blackout",
@@ -175,9 +176,12 @@ export default async function HomePage() {
           </div>
 
           <div className="flex flex-wrap gap-4">
-            <a href="#notify" className="btn-primary text-base">
-              Get Yours — ${PRODUCT.price.toFixed(2)}
-            </a>
+            <HomeBuyButton
+              name={PRODUCT.name}
+              price={PRODUCT.price}
+              photoUrl={PRODUCT.images[0]}
+              className="btn-primary text-base flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            />
             <a href="#how-it-works" className="btn-ghost text-base">
               See How It Works
             </a>
@@ -325,10 +329,19 @@ export default async function HomePage() {
       {/* ── Notify / Email Capture ── */}
       <section id="notify" className="py-12 md:py-16" style={{ background: "linear-gradient(135deg, #FF6B35, #FF4500)" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="headline text-white mb-3">Be First to Get the Take</h2>
+          <h2 className="headline text-white mb-3">Get Your Take V2</h2>
           <p className="text-white/80 text-base md:text-lg mb-6 md:mb-8">
-            Checkout is coming soon — drop your email and we&apos;ll let you know the second it&apos;s live.
+            ${PRODUCT.price.toFixed(2)} · Ships to the US &amp; Canada. Checkout is quick, secure, and powered by Stripe.
           </p>
+          <div className="flex justify-center mb-8">
+            <HomeBuyButton
+              name={PRODUCT.name}
+              price={PRODUCT.price}
+              photoUrl={PRODUCT.images[0]}
+              className="btn-primary text-base bg-white !text-[#FF4500] flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            />
+          </div>
+          <p className="text-white/70 text-sm mb-3">Or drop your email for launch updates &amp; deals:</p>
           <div className="flex justify-center">
             <EmailCapture source="hero" dark />
           </div>
