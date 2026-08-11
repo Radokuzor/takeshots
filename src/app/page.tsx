@@ -1,38 +1,132 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
+import { Star, Zap, ShieldCheck, MapPin, Sparkles } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Product } from "@/lib/types";
 import ProductCard from "@/components/ProductCard";
 import EmailCapture from "@/components/EmailCapture";
-import HeroCarousel from "@/components/HeroCarousel";
-import GetDiscountButton from "@/components/GetDiscountButton";
+import ProductGallery from "@/components/ProductGallery";
+import BrandCarousel from "@/components/BrandCarousel";
 
 export const metadata: Metadata = {
-  title: "TakeShots — The Best Gifts for Every Occasion",
+  title: "The Take V2 — Shot Holder & Straw | TakeShots",
   description:
-    "Discover the best gifts for bachelorette parties, birthdays, anniversaries, game nights, weddings, and holidays. Free shipping on orders over $50.",
+    "Meet the Take V2: a shot holder & straw that turns every shot into a smooth, no-spill chaser. Fits any bottle or glass. Take your next party to the next level.",
   openGraph: {
-    title: "TakeShots — The Best Gifts for Every Occasion",
-    description: "Bachelorette parties, birthdays, anniversaries, game nights — discover gifts they'll actually love.",
+    title: "The Take V2 — Shot Holder & Straw | TakeShots",
+    description:
+      "A patented shot holder & straw that makes the leap from shot to chaser seamless. No spills, no burn, no fumbling.",
   },
 };
 
-const occasions = [
-  { tag: "bachelorette", label: "Bachelorette", emoji: "🥂", color: "#FF6B35" },
-  { tag: "wedding", label: "Wedding", emoji: "💍", color: "#C084FC" },
-  { tag: "birthday", label: "Birthday", emoji: "🎂", color: "#FBBF24" },
-  { tag: "anniversary", label: "Anniversary", emoji: "❤️", color: "#F43F5E" },
-  { tag: "game_night", label: "Game Night", emoji: "🎮", color: "#22C55E" },
-  { tag: "holiday", label: "Holiday", emoji: "🎁", color: "#3B82F6" },
+const PRODUCT = {
+  name: "TakeShots Take V2",
+  tagline: "Take Shots Like Never Before",
+  price: 20.92,
+  rating: 4.2,
+  reviewCount: 300,
+  color: "Blackout",
+  description:
+    "The Take V2 is a patented shot holder & straw that makes the leap from shot to chaser completely seamless. Drop the straw into your chaser or mixed drink, take your shot, and let the burn disappear — no fumbling, no spilling, no excuses.",
+  images: [
+    "https://m.media-amazon.com/images/I/517CqrCxJgL._AC_SL1500_.jpg",
+    "https://m.media-amazon.com/images/I/71193Q2smAL._AC_SL1500_.jpg",
+    "https://m.media-amazon.com/images/I/612L6ixcPrL._AC_SL1080_.jpg",
+    "https://m.media-amazon.com/images/I/71cUBP7d08L._AC_SL1500_.jpg",
+    "https://m.media-amazon.com/images/I/81LAnQ6x4lL._AC_SL1500_.jpg",
+    "https://m.media-amazon.com/images/I/81ebIcWx1GL._AC_SL1500_.jpg",
+    "https://m.media-amazon.com/images/I/81EAd-zOSWL._AC_SL1500_.jpg",
+    "https://m.media-amazon.com/images/S/aplus-media-library-service-media/8a7b22dc-5965-4441-a4f0-a45ccea13c4a.__CR0,0,970,600_PT0_SX1200_V1___.jpg",
+  ],
+};
+
+const BRAND_STORY = {
+  image:
+    "https://m.media-amazon.com/images/S/aplus-media-library-service-media/5d24867d-ff73-4ab9-b768-f100fb9e1eba.__CR0,0,1464,625_PT0_SX1600_V1___.png",
+  eyebrow: "Shoot Your Shot",
+  title: "It's Not Just a Straw. It's a Movement.",
+  body: "TakeShots is a new and exciting way to enjoy shots on-the-go. Our patented shot straw makes shots go down smoother than ever with a seamless transition of shot to chaser. Party smarter and keep the world green by using our refillable shot straws.",
+};
+
+const lifestyle = [
+  {
+    image:
+      "https://m.media-amazon.com/images/S/aplus-media-library-service-media/8f8f722c-8785-4097-b02d-0f0b19c19465.__CR737,0,1072,1342_PT0_SX1000_V1___.jpg",
+    caption: "Game Days",
+  },
+  {
+    image:
+      "https://m.media-amazon.com/images/S/aplus-media-library-service-media/ab0b1170-6a95-409e-b3f5-0675c39f2b72.__CR129,0,613,767_PT0_SX1000_V1___.png",
+    caption: "Beach Trips",
+  },
+  {
+    image:
+      "https://m.media-amazon.com/images/S/aplus-media-library-service-media/4eebb183-3d46-4b42-8e12-7c11b6f26e4f.__CR201,0,1598,2000_PT0_SX1000_V1___.png",
+    caption: "Pool Parties",
+  },
+  {
+    image:
+      "https://m.media-amazon.com/images/S/aplus-media-library-service-media/8173e5aa-1931-4973-b77b-3aa5b79424a7.__CR0,123,3000,3754_PT0_SX1000_V1___.jpg",
+    caption: "Pool Days",
+  },
+  {
+    image:
+      "https://m.media-amazon.com/images/S/aplus-media-library-service-media/de4169c4-116d-4452-b606-f5fe60c523f9.__CR165,0,444,556_PT0_SX1000_V1___.png",
+    caption: "On the Go",
+  },
+  {
+    image:
+      "https://m.media-amazon.com/images/S/aplus-media-library-service-media/a71eed0b-0f60-4451-be9c-5c2bc47de6c0.__CR0,30,557,697_PT0_SX1000_V1___.png",
+    caption: "Any Occasion",
+  },
 ];
 
-const cities = [
-  { name: "Austin", slug: "austin", description: "Sixth Street & beyond" },
-  { name: "Houston", slug: "houston", description: "Montrose to Midtown" },
-  { name: "Dallas", slug: "dallas", description: "Deep Ellum & Uptown" },
+const productDetails = {
+  diagram:
+    "https://m.media-amazon.com/images/S/aplus-media-library-service-media/8e9e7ad5-5b40-4e35-aa54-43d889debc4b.__CR0,0,970,600_PT0_SX1200_V1___.png",
+  caseImage:
+    "https://m.media-amazon.com/images/S/aplus-media-library-service-media/8a7b22dc-5965-4441-a4f0-a45ccea13c4a.__CR0,0,970,600_PT0_SX1400_V1___.jpg",
+  specs: [
+    "Twistable cap for a secure, no-spill seal",
+    "Screw-off lid for easy filling",
+    "Securely holds 1 fl oz",
+    "Made with BPA-free, medical-grade Tritan materials",
+    "One-way valve lets liquid flow through, never out",
+  ],
+  colors: ["Electric Blue", "Blackout", "Arctic White", "Red Hot", "Ladies' Night Camo"],
+};
+
+const features = [
+  {
+    icon: Zap,
+    title: "Shot to Chaser, Seamlessly",
+    body: "Our patented design lets you drop the straw straight into a chaser or mixed drink, so the burn disappears the moment it hits.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "No-Spill Seal",
+    body: "A patented seal keeps your shot locked inside the Take on any adventure — no leaks, no party fouls.",
+  },
+  {
+    icon: MapPin,
+    title: "Fits Any Bottle or Glass",
+    body: "Built to fit all standard bottles and drink glasses, the Take goes wherever the party goes.",
+  },
+  {
+    icon: Sparkles,
+    title: "Built to Last",
+    body: "Made from sustainable, food-safe plastic — durable enough to live in your bag, purse, or golf bag.",
+  },
 ];
 
-async function getFeaturedProducts(): Promise<Product[]> {
+const steps = [
+  { step: "01", title: "Fill the Straw", body: "Load the Take with your shot, wellness shot, or anything you want to chase." },
+  { step: "02", title: "Drop It In", body: "Set the straw into your chaser or mixed drink — no spills, no setup." },
+  { step: "03", title: "Take the Shot", body: "Sip through the burn straight into the chaser. Smoothest shot you've ever taken." },
+];
+
+async function getMoreGifts(): Promise<Product[]> {
   const { data } = await supabase
     .from("products")
     .select("*")
@@ -41,162 +135,205 @@ async function getFeaturedProducts(): Promise<Product[]> {
   return (data as Product[]) ?? [];
 }
 
-async function getLatestBlogSlug(): Promise<string> {
-  const { data } = await supabase
-    .from("articles")
-    .select("slug")
-    .eq("category", "blog")
-    .order("last_updated", { ascending: false })
-    .limit(1)
-    .single();
-  return data?.slug ?? null;
-}
-
-async function getCarouselProducts(): Promise<Product[]> {
-  // Prefer featured products; fall back to newest products if none are featured
-  const { data: featured } = await supabase
-    .from("products")
-    .select("*")
-    .eq("featured", true)
-    .not("photo_url", "is", null)
-    .limit(6);
-  if (featured?.length) return featured as Product[];
-
-  const { data: fallback } = await supabase
-    .from("products")
-    .select("*")
-    .not("photo_url", "is", null)
-    .order("created_at", { ascending: false })
-    .limit(6);
-  return (fallback as Product[]) ?? [];
-}
-
 export default async function HomePage() {
-  const [featured, carouselProducts, latestBlogSlug] = await Promise.all([
-    getFeaturedProducts(),
-    getCarouselProducts(),
-    getLatestBlogSlug(),
-  ]);
+  const moreGifts = await getMoreGifts();
 
   return (
     <>
-      {/* ── Section 1: Hero ── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-16 md:py-24 grid md:grid-cols-2 gap-12 items-center">
+      {/* ── Hero: The Product ── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12 md:py-20 grid md:grid-cols-2 gap-12 items-center">
+        <ProductGallery images={PRODUCT.images} productName={PRODUCT.name} />
+
         <div>
-          <h1 className="headline mb-6">
-            The Best Gifts<br />for Every Occasion
+          <span className="tag mb-5 inline-block">Introducing</span>
+          <h1 className="headline mb-5">
+            {PRODUCT.tagline.split(" ").slice(0, 2).join(" ")}
+            <br />
+            {PRODUCT.tagline.split(" ").slice(2).join(" ")}
           </h1>
-          <p className="text-lg text-[#1A1A1A]/70 max-w-md mb-8 leading-relaxed">
-            Bachelorette parties, birthdays, anniversaries, game nights — discover
-            gifts they&apos;ll actually love.
+          <p className="text-lg text-[#1A1A1A]/70 max-w-md mb-6 leading-relaxed">
+            {PRODUCT.description}
           </p>
-          <div className="flex flex-wrap gap-4">
-            <GetDiscountButton className="btn-primary text-base" />
-            <Link
-              href={latestBlogSlug ? `/blog/${latestBlogSlug}` : "/blog"}
-              className="btn-ghost text-base"
-            >
-              Browse Gift Guides
-            </Link>
+
+          <div className="flex items-center gap-3 mb-8">
+            <div className="flex items-center gap-1 text-[#FF6B35]">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star
+                  key={i}
+                  size={16}
+                  fill={i < Math.round(PRODUCT.rating) ? "currentColor" : "none"}
+                />
+              ))}
+            </div>
+            <span className="text-sm text-[#1A1A1A]/60 font-medium">
+              {PRODUCT.rating} · {PRODUCT.reviewCount}+ reviews
+            </span>
           </div>
-        </div>
-        <div className="hidden md:block">
-          <HeroCarousel products={carouselProducts} />
+
+          <div className="flex items-baseline gap-3 mb-8">
+            <span className="text-3xl font-black">${PRODUCT.price.toFixed(2)}</span>
+            <span className="text-sm text-[#1A1A1A]/50 font-medium">{PRODUCT.color} · 1oz</span>
+          </div>
+
+          <div className="flex flex-wrap gap-4">
+            <a href="#notify" className="btn-primary text-base">
+              Get Yours — ${PRODUCT.price.toFixed(2)}
+            </a>
+            <a href="#how-it-works" className="btn-ghost text-base">
+              See How It Works
+            </a>
+          </div>
         </div>
       </section>
 
-      {/* ── Section 2: Occasion Categories ── */}
+      {/* ── Brand Story ── */}
+      <section className="relative w-full aspect-[21/9] md:aspect-[32/9] min-h-[320px]">
+        <Image
+          src={BRAND_STORY.image}
+          alt={BRAND_STORY.title}
+          fill
+          className="object-cover"
+          sizes="100vw"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
+        <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 flex items-center">
+          <div className="max-w-lg">
+            <span className="text-[#FF6B35] font-bold text-xs uppercase tracking-widest mb-3 block">
+              {BRAND_STORY.eyebrow}
+            </span>
+            <h2 className="text-white font-black text-2xl md:text-4xl uppercase leading-tight mb-4">
+              {BRAND_STORY.title}
+            </h2>
+            <p className="text-white/80 leading-relaxed text-sm md:text-base">{BRAND_STORY.body}</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Features ── */}
       <section className="bg-[#EDEBE5] py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <h2 className="headline text-center mb-10 text-2xl md:text-4xl">
-            Shop by Occasion
+            Why You&apos;ll Love the Take
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            {occasions.map((o) => (
-              <Link
-                key={o.tag}
-                href={`/gifts/${o.tag}`}
-                className="card p-5 flex flex-col items-center gap-3 hover:shadow-lg transition-all text-center group"
-              >
-                <span className="text-3xl">{o.emoji}</span>
-                <span className="font-bold text-sm uppercase tracking-wide group-hover:text-[#FF6B35] transition-colors">
-                  {o.label}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Section 3: Featured Gift Picks ── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
-        <div className="flex items-end justify-between mb-8">
-          <h2 className="headline text-2xl md:text-4xl">Featured Gift Picks</h2>
-          <Link href="/shop" className="text-[#FF6B35] font-bold text-sm uppercase tracking-wide hover:opacity-70 transition-opacity">
-            See All →
-          </Link>
-        </div>
-
-        {featured.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featured.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="card p-4">
-                <div className="aspect-square rounded-xl bg-[#EDEBE5] mb-4 animate-pulse" />
-                <div className="h-3 bg-[#EDEBE5] rounded mb-2 w-3/4 animate-pulse" />
-                <div className="h-3 bg-[#EDEBE5] rounded w-1/2 animate-pulse" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {features.map((f) => (
+              <div key={f.title} className="card p-6 flex flex-col gap-3">
+                <div
+                  className="w-11 h-11 rounded-xl flex items-center justify-center text-white"
+                  style={{ background: "linear-gradient(135deg, #FF6B35, #FF4500)" }}
+                >
+                  <f.icon size={20} />
+                </div>
+                <h3 className="font-black text-base uppercase tracking-tight">{f.title}</h3>
+                <p className="text-sm text-[#1A1A1A]/65 leading-relaxed">{f.body}</p>
               </div>
             ))}
           </div>
-        )}
-      </section>
-
-      {/* ── Section 4: Play the Game ── */}
-      <section className="bg-[#EDEBE5] py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="headline mb-4">Play the TakeShots Game</h2>
-          <p className="text-[#1A1A1A]/70 text-lg mb-8 max-w-md mx-auto">
-            Jump in with friends or strangers. No download needed.
-          </p>
-          <Link href="/play" className="btn-primary text-base">
-            Play Now
-          </Link>
         </div>
       </section>
 
-      {/* ── Section 5: Near Me ── */}
+      {/* ── Brand Carousel ── */}
+      <BrandCarousel slides={lifestyle} />
+
+      {/* ── Product Description ── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
-        <h2 className="headline mb-3">Find the Best Bars Near You</h2>
-        <p className="text-[#1A1A1A]/70 text-lg mb-8 max-w-xl">
-          Hand-picked bars for bachelorettes, birthdays, and big nights out.
+        <h2 className="headline text-center mb-3 text-2xl md:text-4xl">Inside the Take</h2>
+        <p className="text-center text-[#1A1A1A]/70 text-lg mb-12 max-w-xl mx-auto">
+          Simple to fill, impossible to spill. Here&apos;s exactly what makes it work.
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          {cities.map((city) => (
-            <Link
-              key={city.slug}
-              href={`/near-me/${city.slug}`}
-              className="card p-6 group flex flex-col gap-2"
-            >
-              <span className="font-black text-2xl uppercase group-hover:text-[#FF6B35] transition-colors">
-                {city.name}
+
+        <div className="grid md:grid-cols-2 gap-8 items-center mb-16">
+          <div className="card p-4">
+            <div className="relative aspect-[970/600] rounded-xl overflow-hidden bg-white">
+              <Image
+                src={productDetails.diagram}
+                alt="Diagram of the Take's features"
+                fill
+                className="object-contain"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+            </div>
+          </div>
+          <ul className="flex flex-col gap-4">
+            {productDetails.specs.map((spec) => (
+              <li key={spec} className="flex items-start gap-3">
+                <span
+                  className="mt-1 w-2 h-2 rounded-full shrink-0"
+                  style={{ background: "linear-gradient(135deg, #FF6B35, #FF4500)" }}
+                />
+                <span className="text-[#1A1A1A]/75 leading-relaxed">{spec}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="relative aspect-[970/600] sm:aspect-[970/400] rounded-3xl overflow-hidden mb-10">
+          <Image
+            src={productDetails.caseImage}
+            alt="TakeShots waterproof carrying case"
+            fill
+            className="object-cover"
+            sizes="100vw"
+          />
+        </div>
+
+        <div className="text-center">
+          <p className="text-sm font-bold uppercase tracking-widest text-[#1A1A1A]/50 mb-4">
+            Also Available In
+          </p>
+          <div className="flex flex-wrap justify-center gap-3">
+            {productDetails.colors.map((color) => (
+              <span key={color} className="tag" style={{ background: "#1A1A1A" }}>
+                {color}
               </span>
-              <span className="text-[#1A1A1A]/60 text-sm">{city.description}</span>
-              <span className="text-[#FF6B35] font-bold text-sm mt-2">View Guide →</span>
-            </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── How It Works ── */}
+      <section id="how-it-works" className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
+        <h2 className="headline text-center mb-3 text-2xl md:text-4xl">How It Works</h2>
+        <p className="text-center text-[#1A1A1A]/70 text-lg mb-12 max-w-xl mx-auto">
+          Three steps between you and the smoothest shot you&apos;ve ever taken.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+          {steps.map((s) => (
+            <div key={s.step} className="text-center">
+              <span className="block text-5xl font-black text-[#FF6B35]/25 mb-3">{s.step}</span>
+              <h3 className="font-black text-lg uppercase mb-2">{s.title}</h3>
+              <p className="text-sm text-[#1A1A1A]/65 leading-relaxed max-w-xs mx-auto">{s.body}</p>
+            </div>
           ))}
         </div>
       </section>
 
-      {/* ── Section 6: Email Capture ── */}
-      <section className="py-16" style={{ background: "linear-gradient(135deg, #FF6B35, #FF4500)" }}>
+      {/* ── More Gifts ── */}
+      {moreGifts.length > 0 && (
+        <section className="bg-[#EDEBE5] py-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <div className="flex items-end justify-between mb-8">
+              <h2 className="headline text-2xl md:text-4xl">More Gifts You&apos;ll Love</h2>
+              <Link href="/shop" className="text-[#FF6B35] font-bold text-sm uppercase tracking-wide hover:opacity-70 transition-opacity">
+                See All →
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {moreGifts.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── Notify / Email Capture ── */}
+      <section id="notify" className="py-16" style={{ background: "linear-gradient(135deg, #FF6B35, #FF4500)" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="headline text-white mb-3">Get 20% Off Your First Order</h2>
-          <p className="text-white/80 text-lg mb-8">Join the list. Get the discount. No spam.</p>
+          <h2 className="headline text-white mb-3">Be First to Get the Take</h2>
+          <p className="text-white/80 text-lg mb-8">
+            Checkout is coming soon — drop your email and we&apos;ll let you know the second it&apos;s live.
+          </p>
           <div className="flex justify-center">
             <EmailCapture source="hero" dark />
           </div>
