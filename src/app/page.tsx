@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 const PRODUCT = {
   name: "TakeShots Take V2",
   tagline: "Take Shots Like Never Before",
-  price: 29.99,
+  price: 19.99,
   rating: 4.2,
   reviewCount: 300,
   color: "Blackout",
@@ -124,6 +124,59 @@ const steps = [
   { step: "01", title: "Fill the Straw", body: "Load the Take with your shot, wellness shot, or anything you want to chase." },
   { step: "02", title: "Drop It In", body: "Set the straw into your chaser or mixed drink — no spills, no setup." },
   { step: "03", title: "Take the Shot", body: "Sip through the burn straight into the chaser. Smoothest shot you've ever taken." },
+];
+
+// Real reviews pulled from the Amazon listing (amazon.com/dp/B0B5FHK5SN)
+const reviews = [
+  {
+    stars: 5,
+    title: "WOW! lifesaver is that you?",
+    body: "I bought this after seeing it used to take horrible tasting herbal supplements (soursop & black seed bitters) and OMG yesssss! It helps me tremendously to get it all down in one try!! BUY IT!! I haven't even tried it with a alcoholic shot yet lol but Im for sure it works. Thank you!!",
+    author: "ShaTerrica Brigman",
+    date: "April 12, 2026",
+  },
+  {
+    stars: 5,
+    title: "Good product",
+    body: "Does amazing job I already had one but it got ruined from a drink that had pulp in the drink so I bought another and works wonders",
+    author: "Madison",
+    date: "February 10, 2026",
+  },
+  {
+    stars: 5,
+    title: "Works Perfectly!",
+    body: "Amazing! Worked perfectly as suspected I tasted it for a millisecond and after that only the fruit juice lol amazing product 10/10 would recommend!",
+    author: "Powerful Princess Paris",
+    date: "March 26, 2026",
+  },
+  {
+    stars: 4,
+    title: "Didn’t work as expected",
+    body: "It was ok, it’s nothing life changing. Still tasted alcohol.",
+    author: "Jazmine",
+    date: "July 20, 2023",
+  },
+  {
+    stars: 3,
+    title: "The 2.0 is better lol",
+    body: "Works well easy to use. Kinda spendy. And will get mold in the silicone if not cleaned properly",
+    author: "Caitlyn Elliott",
+    date: "April 3, 2026",
+  },
+  {
+    stars: 5,
+    title: "Lots of fun!!",
+    body: "Love it. Exactly as advertised. I would fill only half to 3/4 full with your favorite adult beverage. Then use your favorite chaser. Really easy to use. Does not leak. Very easy to clean. You will definitely have fun using it.",
+    author: "Corey H.",
+    date: "August 2, 2025",
+  },
+  {
+    stars: 5,
+    title: "Perfect!",
+    body: "If you don’t do well with taking shots, this straw is great! I love it!",
+    author: "Kelsey Ann King",
+    date: "September 11, 2025",
+  },
 ];
 
 async function getMoreGifts(): Promise<Product[]> {
@@ -304,6 +357,32 @@ export default async function HomePage() {
               <p className="text-sm text-[#1A1A1A]/65 leading-relaxed max-w-xs mx-auto">{s.body}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ── Reviews ── */}
+      <section className="bg-[#EDEBE5] py-12 md:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <h2 className="headline text-center mb-3 text-2xl md:text-4xl">What People Are Saying</h2>
+          <p className="text-center text-[#1A1A1A]/70 text-base md:text-lg mb-8 md:mb-12">
+            {PRODUCT.rating} · {PRODUCT.reviewCount}+ ratings on Amazon
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {reviews.map((r) => (
+              <div key={r.title} className="card p-6 flex flex-col gap-3">
+                <div className="flex items-center gap-1 text-[#FF6B35]">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} size={14} fill={i < r.stars ? "currentColor" : "none"} />
+                  ))}
+                </div>
+                <h3 className="font-black text-base leading-snug">{r.title}</h3>
+                <p className="text-sm text-[#1A1A1A]/70 leading-relaxed flex-1">{r.body}</p>
+                <div className="text-xs text-[#1A1A1A]/50 font-medium pt-2 border-t border-[#EDEBE5]">
+                  {r.author} · {r.date}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
