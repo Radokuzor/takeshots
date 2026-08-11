@@ -143,7 +143,7 @@ export default async function HomePage() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10 md:py-20 grid md:grid-cols-2 gap-8 md:gap-12 items-center">
         <ProductGallery images={PRODUCT.images} productName={PRODUCT.name} />
 
-        <div>
+        <div className="min-w-0">
           <span className="tag mb-5 inline-block">Introducing</span>
           <h1 className="headline mb-5">
             {PRODUCT.tagline.split(" ").slice(0, 2).join(" ")}

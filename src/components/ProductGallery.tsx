@@ -15,7 +15,7 @@ export default function ProductGallery({
   if (!images.length) return null;
 
   return (
-    <div>
+    <div className="min-w-0">
       <div className="relative aspect-square rounded-3xl overflow-hidden bg-white">
         <Image
           key={images[active]}
