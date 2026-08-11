@@ -41,13 +41,13 @@ export default function BrandCarousel({ slides }: { slides: Slide[] }) {
 
   return (
     <section
-      className="relative py-16 overflow-hidden"
+      className="relative py-12 md:py-16 overflow-hidden"
       style={{ background: "radial-gradient(circle at 50% 0%, #0F3A42 0%, #05171B 65%, #020C0E 100%)" }}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <h2 className="text-white font-black text-2xl md:text-4xl uppercase text-center mb-10">
+        <h2 className="text-white font-black text-2xl md:text-4xl uppercase text-center mb-8 md:mb-10">
           Built for Every Occasion
         </h2>
 

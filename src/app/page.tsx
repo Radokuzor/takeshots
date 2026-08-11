@@ -94,7 +94,6 @@ const productDetails = {
     "Made with BPA-free, medical-grade Tritan materials",
     "One-way valve lets liquid flow through, never out",
   ],
-  colors: ["Electric Blue", "Blackout", "Arctic White", "Red Hot", "Ladies' Night Camo"],
 };
 
 const features = [
@@ -141,7 +140,7 @@ export default async function HomePage() {
   return (
     <>
       {/* ── Hero: The Product ── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12 md:py-20 grid md:grid-cols-2 gap-12 items-center">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10 md:py-20 grid md:grid-cols-2 gap-8 md:gap-12 items-center">
         <ProductGallery images={PRODUCT.images} productName={PRODUCT.name} />
 
         <div>
@@ -187,32 +186,41 @@ export default async function HomePage() {
       </section>
 
       {/* ── Brand Story ── */}
-      <section className="relative w-full aspect-[21/9] md:aspect-[32/9] min-h-[320px]">
-        <Image
-          src={BRAND_STORY.image}
-          alt={BRAND_STORY.title}
-          fill
-          className="object-cover"
-          sizes="100vw"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
-        <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 flex items-center">
-          <div className="max-w-lg">
+      <section className="bg-[#05171B]">
+        {/* Mobile: image on top, copy below (an overlay band crops badly at narrow widths) */}
+        <div className="md:hidden">
+          <div className="relative w-full aspect-[4/3]">
+            <Image src={BRAND_STORY.image} alt={BRAND_STORY.title} fill className="object-cover" sizes="100vw" />
+          </div>
+          <div className="px-4 py-10">
             <span className="text-[#FF6B35] font-bold text-xs uppercase tracking-widest mb-3 block">
               {BRAND_STORY.eyebrow}
             </span>
-            <h2 className="text-white font-black text-2xl md:text-4xl uppercase leading-tight mb-4">
-              {BRAND_STORY.title}
-            </h2>
-            <p className="text-white/80 leading-relaxed text-sm md:text-base">{BRAND_STORY.body}</p>
+            <h2 className="text-white font-black text-2xl uppercase leading-tight mb-3">{BRAND_STORY.title}</h2>
+            <p className="text-white/80 leading-relaxed text-sm">{BRAND_STORY.body}</p>
+          </div>
+        </div>
+
+        {/* Desktop: full-bleed overlay */}
+        <div className="hidden md:block relative w-full aspect-[32/9] min-h-[380px]">
+          <Image src={BRAND_STORY.image} alt={BRAND_STORY.title} fill className="object-cover" sizes="100vw" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
+          <div className="relative h-full max-w-7xl mx-auto px-6 flex items-center">
+            <div className="max-w-lg">
+              <span className="text-[#FF6B35] font-bold text-xs uppercase tracking-widest mb-3 block">
+                {BRAND_STORY.eyebrow}
+              </span>
+              <h2 className="text-white font-black text-4xl uppercase leading-tight mb-4">{BRAND_STORY.title}</h2>
+              <p className="text-white/80 leading-relaxed text-base">{BRAND_STORY.body}</p>
+            </div>
           </div>
         </div>
       </section>
 
       {/* ── Features ── */}
-      <section className="bg-[#EDEBE5] py-16">
+      <section className="bg-[#EDEBE5] py-12 md:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <h2 className="headline text-center mb-10 text-2xl md:text-4xl">
+          <h2 className="headline text-center mb-8 md:mb-10 text-2xl md:text-4xl">
             Why You&apos;ll Love the Take
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -236,13 +244,13 @@ export default async function HomePage() {
       <BrandCarousel slides={lifestyle} />
 
       {/* ── Product Description ── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12 md:py-16">
         <h2 className="headline text-center mb-3 text-2xl md:text-4xl">Inside the Take</h2>
-        <p className="text-center text-[#1A1A1A]/70 text-lg mb-12 max-w-xl mx-auto">
+        <p className="text-center text-[#1A1A1A]/70 text-base md:text-lg mb-8 md:mb-12 max-w-xl mx-auto">
           Simple to fill, impossible to spill. Here&apos;s exactly what makes it work.
         </p>
 
-        <div className="grid md:grid-cols-2 gap-8 items-center mb-16">
+        <div className="grid md:grid-cols-2 gap-8 items-center mb-10 md:mb-16">
           <div className="card p-4">
             <div className="relative aspect-[970/600] rounded-xl overflow-hidden bg-white">
               <Image
@@ -267,7 +275,7 @@ export default async function HomePage() {
           </ul>
         </div>
 
-        <div className="relative aspect-[970/600] sm:aspect-[970/400] rounded-3xl overflow-hidden mb-10">
+        <div className="relative aspect-[970/600] sm:aspect-[970/400] rounded-3xl overflow-hidden">
           <Image
             src={productDetails.caseImage}
             alt="TakeShots waterproof carrying case"
@@ -276,25 +284,12 @@ export default async function HomePage() {
             sizes="100vw"
           />
         </div>
-
-        <div className="text-center">
-          <p className="text-sm font-bold uppercase tracking-widest text-[#1A1A1A]/50 mb-4">
-            Also Available In
-          </p>
-          <div className="flex flex-wrap justify-center gap-3">
-            {productDetails.colors.map((color) => (
-              <span key={color} className="tag" style={{ background: "#1A1A1A" }}>
-                {color}
-              </span>
-            ))}
-          </div>
-        </div>
       </section>
 
       {/* ── How It Works ── */}
-      <section id="how-it-works" className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
+      <section id="how-it-works" className="max-w-7xl mx-auto px-4 sm:px-6 py-12 md:py-16">
         <h2 className="headline text-center mb-3 text-2xl md:text-4xl">How It Works</h2>
-        <p className="text-center text-[#1A1A1A]/70 text-lg mb-12 max-w-xl mx-auto">
+        <p className="text-center text-[#1A1A1A]/70 text-base md:text-lg mb-8 md:mb-12 max-w-xl mx-auto">
           Three steps between you and the smoothest shot you&apos;ve ever taken.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
@@ -310,9 +305,9 @@ export default async function HomePage() {
 
       {/* ── More Gifts ── */}
       {moreGifts.length > 0 && (
-        <section className="bg-[#EDEBE5] py-16">
+        <section className="bg-[#EDEBE5] py-12 md:py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <div className="flex items-end justify-between mb-8">
+            <div className="flex items-end justify-between mb-6 md:mb-8">
               <h2 className="headline text-2xl md:text-4xl">More Gifts You&apos;ll Love</h2>
               <Link href="/shop" className="text-[#FF6B35] font-bold text-sm uppercase tracking-wide hover:opacity-70 transition-opacity">
                 See All →
@@ -328,10 +323,10 @@ export default async function HomePage() {
       )}
 
       {/* ── Notify / Email Capture ── */}
-      <section id="notify" className="py-16" style={{ background: "linear-gradient(135deg, #FF6B35, #FF4500)" }}>
+      <section id="notify" className="py-12 md:py-16" style={{ background: "linear-gradient(135deg, #FF6B35, #FF4500)" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
           <h2 className="headline text-white mb-3">Be First to Get the Take</h2>
-          <p className="text-white/80 text-lg mb-8">
+          <p className="text-white/80 text-base md:text-lg mb-6 md:mb-8">
             Checkout is coming soon — drop your email and we&apos;ll let you know the second it&apos;s live.
           </p>
           <div className="flex justify-center">
