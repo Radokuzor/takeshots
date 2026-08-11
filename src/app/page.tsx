@@ -30,14 +30,14 @@ const PRODUCT = {
   description:
     "The Take V2 is a patented shot holder & straw that makes the leap from shot to chaser completely seamless. Drop the straw into your chaser or mixed drink, take your shot, and let the burn disappear — no fumbling, no spilling, no excuses.",
   images: [
-    "https://m.media-amazon.com/images/I/517CqrCxJgL._AC_SL1500_.jpg",
     "https://m.media-amazon.com/images/I/71193Q2smAL._AC_SL1500_.jpg",
+    "https://m.media-amazon.com/images/S/aplus-media-library-service-media/8a7b22dc-5965-4441-a4f0-a45ccea13c4a.__CR0,0,970,600_PT0_SX1200_V1___.jpg",
     "https://m.media-amazon.com/images/I/612L6ixcPrL._AC_SL1080_.jpg",
     "https://m.media-amazon.com/images/I/71cUBP7d08L._AC_SL1500_.jpg",
-    "https://m.media-amazon.com/images/I/81LAnQ6x4lL._AC_SL1500_.jpg",
     "https://m.media-amazon.com/images/I/81ebIcWx1GL._AC_SL1500_.jpg",
     "https://m.media-amazon.com/images/I/81EAd-zOSWL._AC_SL1500_.jpg",
-    "https://m.media-amazon.com/images/S/aplus-media-library-service-media/8a7b22dc-5965-4441-a4f0-a45ccea13c4a.__CR0,0,970,600_PT0_SX1200_V1___.jpg",
+    "https://m.media-amazon.com/images/I/81LAnQ6x4lL._AC_SL1500_.jpg",
+    "https://m.media-amazon.com/images/I/517CqrCxJgL._AC_SL1500_.jpg",
   ],
 };
 
