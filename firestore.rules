@@ -1,0 +1,36 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /games/{gameCode} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasAll(
+        ['code','status','roundLength','currentPromptIndex','prompts','hostPlayerId','createdAt']
+      );
+      allow update: if true; // tighten later: only allow known transitions
+
+      match /players/{playerId} {
+        allow read: if true;
+        allow create: if request.resource.data.keys().hasAll(['name','joinedAt','score']);
+        allow update: if true;
+      }
+
+      match /rounds/{promptIndex} {
+        allow read: if true;
+        allow write: if true;
+
+        match /votes/{voterId} {
+          allow read: if true;
+          allow create, update: if request.resource.data.keys().hasAll(['votedForPlayerId','votedAt']);
+        }
+      }
+    }
+
+    // "Shots" SEO blog (guides + recipes). Public read/write — same open-rules
+    // pattern as /games above, since there's no auth system. Writes only ever
+    // happen from the admin_auth-cookie-gated /api/admin/shot-content route.
+    match /shot_content/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+  }
+}

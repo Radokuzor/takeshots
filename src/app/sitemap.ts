@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
+import { collection, getDocs } from "firebase/firestore";
 import { supabase } from "@/lib/supabase";
+import { db } from "@/lib/firebase";
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://takeshots.com";
 
@@ -42,6 +44,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
+  const shotContentSnap = await getDocs(collection(db, "shot_content"));
+  const shotRoutes: MetadataRoute.Sitemap = shotContentSnap.docs.map((d) => {
+    const data = d.data() as { slug: string; updatedAt: string };
+    return {
+      url: `${BASE}/blog/${data.slug}`,
+      lastModified: new Date(data.updatedAt),
+      changeFrequency: "weekly",
+      priority: 0.7,
+    };
+  });
+
   return [
     ...STATIC_ROUTES.map((route) => ({
       url: `${BASE}${route}`,
@@ -50,5 +63,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: route === "/" ? 1 : 0.8,
     })),
     ...articleRoutes,
+    ...shotRoutes,
   ];
 }

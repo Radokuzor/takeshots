@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Trash2, Pencil, Sparkles, Link, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Product, Article, OccasionTag, ArticleCategory, Review } from "@/lib/types";
+import ShotContentAdmin from "./ShotContentAdmin";
 
 const OCCASIONS: OccasionTag[] = [
   "bachelorette", "bachelor", "wedding", "birthday", "anniversary", "game_night", "holiday",
@@ -540,6 +541,8 @@ export default function AdminClient() {
       {/* ── Articles tab ────────────────────────────────── */}
       {tab === "articles" && (
         <div className="flex flex-col gap-10">
+          <ShotContentAdmin />
+
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#EDEBE5]">
             <div className="flex items-center gap-2 mb-3">
               <Sparkles size={18} className="text-[#FF6B35]" />

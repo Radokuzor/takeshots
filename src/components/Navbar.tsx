@@ -1,20 +1,26 @@
 "use client";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Menu, X, ShoppingCart } from "lucide-react";
 import { useCart } from "@/lib/cart";
 import GetDiscountButton from "@/components/GetDiscountButton";
 
 const links = [
+  { label: "Home", href: "/" },
   { label: "Play", href: "/play" },
-  { label: "Shop", href: "/shop" },
-  { label: "Near Me", href: "/near-me" },
   { label: "Blog", href: "/blog" },
   { label: "About Us", href: "/about" },
 ];
 
+function isActiveLink(pathname: string, href: string) {
+  if (href === "/") return pathname === "/";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
   const { items, setOpen: setCartOpen } = useCart();
   const itemCount = items.reduce((s, i) => s + i.quantity, 0);
 
@@ -32,7 +38,11 @@ export default function Navbar() {
             <Link
               key={l.href}
               href={l.href}
-              className="font-semibold text-sm tracking-wide uppercase hover:text-[#FF6B35] transition-colors"
+              className={`font-semibold text-sm tracking-wide uppercase transition-colors ${
+                isActiveLink(pathname, l.href)
+                  ? "text-[#FF6B35]"
+                  : "hover:text-[#FF6B35]"
+              }`}
             >
               {l.label}
             </Link>
@@ -78,7 +88,9 @@ export default function Navbar() {
                 key={l.href}
                 href={l.href}
                 onClick={() => setOpen(false)}
-                className="font-semibold text-sm tracking-wide uppercase"
+                className={`font-semibold text-sm tracking-wide uppercase ${
+                  isActiveLink(pathname, l.href) ? "text-[#FF6B35]" : ""
+                }`}
               >
                 {l.label}
               </Link>

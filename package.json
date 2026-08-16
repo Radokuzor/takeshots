@@ -13,6 +13,7 @@
     "@clerk/nextjs": "^6.0.0",
     "@stripe/stripe-js": "^4.0.0",
     "@supabase/supabase-js": "^2.0.0",
+    "firebase": "^12.17.1",
     "framer-motion": "^11.0.0",
     "lucide-react": "^0.400.0",
     "next": "^16.2.6",
