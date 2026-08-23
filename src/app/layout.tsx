@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
 import DiscountModal from "@/components/DiscountModal";
+import AnalyticsTracker from "@/components/AnalyticsTracker";
 
 export const metadata: Metadata = {
   title: {
@@ -29,6 +30,7 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body className="bg-[#F5F4F0] text-[#1A1A1A] antialiased">
+          <AnalyticsTracker />
           <Navbar />
           <CartDrawer />
           <DiscountModal />

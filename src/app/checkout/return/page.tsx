@@ -33,6 +33,11 @@ function CheckoutReturnContent() {
           setEmail(data.customerEmail);
           clearCart();
           setBuyNowItem(null);
+          try {
+            sessionStorage.setItem("ts_purchased", "1");
+          } catch {
+            // sessionStorage unavailable — abandonment flag will be a false positive
+          }
         } else {
           setStatus("failed");
         }
