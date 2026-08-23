@@ -1,9 +1,9 @@
 "use client";
-import { loadStripe } from "@stripe/stripe-js";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Loader2, Minus, Plus } from "lucide-react";
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+import { Minus, Plus } from "lucide-react";
+import { useCart } from "@/lib/cart";
+import type { Product } from "@/lib/types";
 
 interface Props {
   name: string;
@@ -14,29 +14,29 @@ interface Props {
 
 export default function HomeBuyButton({ name, price, photoUrl, className }: Props) {
   const [quantity, setQuantity] = useState(1);
-  const [buyingNow, setBuyingNow] = useState(false);
+  const router = useRouter();
+  const setBuyNowItem = useCart((s) => s.setBuyNowItem);
 
-  async function buyNow() {
-    setBuyingNow(true);
-    try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: [
-            {
-              product: { name, price, photo_url: photoUrl ?? null },
-              quantity,
-            },
-          ],
-        }),
-      });
-      const { sessionId } = await res.json();
-      const stripe = await stripePromise;
-      await stripe?.redirectToCheckout({ sessionId });
-    } finally {
-      setBuyingNow(false);
-    }
+  function buyNow() {
+    const product: Product = {
+      id: `promo-${name}`,
+      name,
+      description: null,
+      price,
+      photo_url: photoUrl ?? null,
+      photo_urls: null,
+      occasion_tag: null,
+      occasion_tags: null,
+      amazon_asin: null,
+      pros: null,
+      cons: null,
+      key_points: null,
+      reviews: null,
+      featured: false,
+      created_at: new Date().toISOString(),
+    };
+    setBuyNowItem({ product, quantity });
+    router.push("/checkout");
   }
 
   return (
@@ -63,14 +63,8 @@ export default function HomeBuyButton({ name, price, photoUrl, className }: Prop
         </button>
       </div>
 
-      <button onClick={buyNow} disabled={buyingNow} className={className}>
-        {buyingNow ? (
-          <>
-            <Loader2 size={16} className="animate-spin" /> Processing…
-          </>
-        ) : (
-          `Buy Now — $${(price * quantity).toFixed(2)}`
-        )}
+      <button onClick={buyNow} className={className}>
+        Buy Now — ${(price * quantity).toFixed(2)}
       </button>
     </div>
   );

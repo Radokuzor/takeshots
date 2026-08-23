@@ -1,35 +1,17 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingCart, Loader2, Check } from "lucide-react";
-import { loadStripe } from "@stripe/stripe-js";
+import { ShoppingCart, Check } from "lucide-react";
 import { useState } from "react";
 import type { Product } from "@/lib/types";
 import { useCart } from "@/lib/cart";
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+import { useBuyNow } from "@/lib/useBuyNow";
 
 export default function ProductEmbed({ product }: { product: Product }) {
   const { addItem } = useCart();
+  const buyNow = useBuyNow();
   const img = product.photo_urls?.[0] ?? product.photo_url;
-  const [buyingNow, setBuyingNow] = useState(false);
   const [added, setAdded] = useState(false);
-
-  async function buyNow() {
-    setBuyingNow(true);
-    try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: [{ product, quantity: 1 }] }),
-      });
-      const { sessionId } = await res.json();
-      const stripe = await stripePromise;
-      await stripe?.redirectToCheckout({ sessionId });
-    } finally {
-      setBuyingNow(false);
-    }
-  }
 
   function handleAddToCart() {
     addItem(product);
@@ -65,11 +47,10 @@ export default function ProductEmbed({ product }: { product: Product }) {
         )}
         <div className="flex flex-wrap gap-2 mt-3">
           <button
-            onClick={buyNow}
-            disabled={buyingNow}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-pill bg-gradient-to-r from-[#FF6B35] to-[#FF4500] text-white text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-70 disabled:cursor-not-allowed"
+            onClick={() => buyNow(product)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-pill bg-gradient-to-r from-[#FF6B35] to-[#FF4500] text-white text-sm font-bold hover:opacity-90 transition-opacity"
           >
-            {buyingNow ? <><Loader2 size={12} className="animate-spin" /> Processing…</> : "Buy Now"}
+            Buy Now
           </button>
           <button
             onClick={handleAddToCart}

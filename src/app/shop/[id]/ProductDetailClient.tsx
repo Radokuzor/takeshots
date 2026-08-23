@@ -1,12 +1,10 @@
 "use client";
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { ShoppingCart, Loader2, Check } from "lucide-react";
-import { loadStripe } from "@stripe/stripe-js";
+import { ShoppingCart, Check } from "lucide-react";
 import type { Product, Review } from "@/lib/types";
 import { useCart } from "@/lib/cart";
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+import { useBuyNow } from "@/lib/useBuyNow";
 
 const OCCASION_LABELS: Record<string, string> = {
   bachelorette: "Bachelorette / Hers",
@@ -20,7 +18,7 @@ const OCCASION_LABELS: Record<string, string> = {
 
 export default function ProductDetailClient({ product }: { product: Product }) {
   const { addItem } = useCart();
-  const [buyingNow, setBuyingNow] = useState(false);
+  const buyNow = useBuyNow();
   const [added, setAdded] = useState(false);
   const [reviews, setReviews] = useState<Review[]>(product.reviews ?? []);
   const [loadingReviews, setLoadingReviews] = useState(false);
@@ -33,22 +31,6 @@ export default function ProductDetailClient({ product }: { product: Product }) {
       .then((data) => { if (data.reviews?.length) setReviews(data.reviews); })
       .finally(() => setLoadingReviews(false));
   }, [product.id, product.amazon_asin, product.reviews]);
-
-  async function buyNow() {
-    setBuyingNow(true);
-    try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: [{ product, quantity: 1 }] }),
-      });
-      const { sessionId } = await res.json();
-      const stripe = await stripePromise;
-      await stripe?.redirectToCheckout({ sessionId });
-    } finally {
-      setBuyingNow(false);
-    }
-  }
 
   function handleAddToCart() {
     addItem(product);
@@ -175,11 +157,10 @@ export default function ProductDetailClient({ product }: { product: Product }) {
             {added ? <><Check size={16} /> Added!</> : <><ShoppingCart size={16} /> Add to Cart</>}
           </button>
           <button
-            onClick={buyNow}
-            disabled={buyingNow}
-            className="btn-ghost flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            onClick={() => buyNow(product)}
+            className="btn-ghost flex items-center gap-2"
           >
-            {buyingNow ? <><Loader2 size={16} className="animate-spin" /> Processing…</> : "Buy Now"}
+            Buy Now
           </button>
         </div>
       </div>

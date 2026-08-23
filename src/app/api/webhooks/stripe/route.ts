@@ -33,18 +33,18 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object as Stripe.Checkout.Session;
+  if (event.type === "payment_intent.succeeded") {
+    const paymentIntent = event.data.object as Stripe.PaymentIntent;
 
-    const items = session.metadata?.order_items
-      ? JSON.parse(session.metadata.order_items)
+    const items = paymentIntent.metadata?.order_items
+      ? JSON.parse(paymentIntent.metadata.order_items)
       : [];
 
     const { error } = await supabaseAdmin().from("orders").insert({
-      customer_email: session.customer_details?.email ?? "unknown",
-      stripe_payment_id: session.id,
+      customer_email: paymentIntent.receipt_email ?? "unknown",
+      stripe_payment_id: paymentIntent.id,
       items,
-      total: (session.amount_total ?? 0) / 100,
+      total: paymentIntent.amount / 100,
       status: "pending",
     });
 
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       .join("\n");
 
     await notifyTelegram(
-      `🎉 *New order!*\n${session.customer_details?.email ?? "unknown"}\n$${((session.amount_total ?? 0) / 100).toFixed(2)}\n${itemLines}`
+      `🎉 *New order!*\n${paymentIntent.receipt_email ?? "unknown"}\n$${(paymentIntent.amount / 100).toFixed(2)}\n${itemLines}`
     );
   }
 

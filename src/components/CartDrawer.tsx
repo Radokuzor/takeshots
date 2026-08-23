@@ -1,30 +1,17 @@
 "use client";
-import { X, Minus, Plus, Trash2, Loader2 } from "lucide-react";
+import { X, Minus, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart";
-import { loadStripe } from "@stripe/stripe-js";
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 export default function CartDrawer() {
-  const { items, open, setOpen, removeItem, updateQuantity, total, clearCart } = useCart();
-  const [checkingOut, setCheckingOut] = useState(false);
+  const { items, open, setOpen, removeItem, updateQuantity, total, clearCart, setBuyNowItem } = useCart();
+  const router = useRouter();
 
-  async function handleCheckout() {
-    setCheckingOut(true);
-    try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items }),
-      });
-      const { sessionId } = await res.json();
-      const stripe = await stripePromise;
-      await stripe?.redirectToCheckout({ sessionId });
-    } finally {
-      setCheckingOut(false);
-    }
+  function handleCheckout() {
+    setBuyNowItem(null);
+    setOpen(false);
+    router.push("/checkout");
   }
 
   return (
@@ -107,10 +94,9 @@ export default function CartDrawer() {
             </div>
             <button
               onClick={handleCheckout}
-              disabled={checkingOut}
-              className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="btn-primary w-full flex items-center justify-center gap-2"
             >
-              {checkingOut ? <><Loader2 size={16} className="animate-spin" /> Processing…</> : "Checkout"}
+              Checkout
             </button>
             <button
               onClick={clearCart}

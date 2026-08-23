@@ -6,11 +6,13 @@ import type { CartItem, Product } from "./types";
 interface CartStore {
   items: CartItem[];
   open: boolean;
+  buyNowItem: CartItem | null;
   addItem: (product: Product) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   setOpen: (open: boolean) => void;
+  setBuyNowItem: (item: CartItem | null) => void;
   total: () => number;
 }
 
@@ -19,6 +21,7 @@ export const useCart = create<CartStore>()(
     (set, get) => ({
       items: [],
       open: false,
+      buyNowItem: null,
       addItem: (product) => {
         const existing = get().items.find((i) => i.product.id === product.id);
         if (existing) {
@@ -49,12 +52,16 @@ export const useCart = create<CartStore>()(
       },
       clearCart: () => set({ items: [] }),
       setOpen: (open) => set({ open }),
+      setBuyNowItem: (item) => set({ buyNowItem: item }),
       total: () =>
         get().items.reduce(
           (sum, i) => sum + i.product.price * i.quantity,
           0
         ),
     }),
-    { name: "takeshots-cart" }
+    {
+      name: "takeshots-cart",
+      partialize: (state) => ({ items: state.items }),
+    }
   )
 );
