@@ -59,12 +59,30 @@ export interface CartItem {
   quantity: number;
 }
 
+export interface OrderItem {
+  product_id: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+export interface Order {
+  id: string;
+  customer_email: string;
+  stripe_payment_id: string | null;
+  items: OrderItem[];
+  total: number;
+  status: "pending" | "fulfilled" | "cancelled";
+  created_at: string;
+}
+
 export interface Database {
   public: {
     Tables: {
       products: { Row: Product; Insert: Omit<Product, "id" | "created_at">; Update: Partial<Product> };
       articles: { Row: Article; Insert: Omit<Article, "id">; Update: Partial<Article> };
       email_subscribers: { Row: EmailSubscriber; Insert: Omit<EmailSubscriber, "id" | "created_at">; Update: Partial<EmailSubscriber> };
+      orders: { Row: Order; Insert: Omit<Order, "id" | "created_at">; Update: Partial<Order> };
     };
   };
 }

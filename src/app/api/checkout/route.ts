@@ -17,12 +17,22 @@ export async function POST(req: NextRequest) {
     quantity: item.quantity,
   }));
 
+  const order_items = items.map((item) => ({
+    product_id: item.product.id,
+    name: item.product.name,
+    price: item.product.price,
+    quantity: item.quantity,
+  }));
+
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     line_items,
     success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/shop?success=1`,
     cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/shop?cancelled=1`,
     allow_promotion_codes: true,
+    metadata: {
+      order_items: JSON.stringify(order_items),
+    },
     
     // 👇 ADDED THIS TO FORCE SHIPPING ADDRESS COLLECTION 👇
     shipping_address_collection: {

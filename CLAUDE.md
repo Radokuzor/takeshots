@@ -99,7 +99,7 @@ Two things intentionally live in Firestore instead of Supabase, because they don
 
 ## Known Gaps / Inconsistencies (don't "fix" silently — flag or confirm intent first)
 
-- **No Stripe webhook handler.** `STRIPE_WEBHOOK_SECRET` is defined in env but unused. Checkout Sessions are created and money is charged, but nothing ever writes to the `orders` table, sends a confirmation, or reconciles payment status. There's no success/confirmation page either — success/cancel just redirects to `/shop?success=1`/`?cancelled=1`.
+- **Stripe webhook handler exists** at `src/app/api/webhooks/stripe/route.ts`, registered in the Stripe Dashboard against `https://takeshots.com/api/webhooks/stripe`. On `checkout.session.completed` it verifies the signature with `STRIPE_WEBHOOK_SECRET`, writes a row to `orders` (cart contents are round-tripped via Checkout Session `metadata.order_items`, set in `api/checkout/route.ts`), and pings Telegram (`TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID`) with the order summary. There's still no success/confirmation page — success/cancel just redirects to `/shop?success=1`/`?cancelled=1` — and cart contents beyond ~500 chars of JSON metadata per Stripe's limit would be dropped, so this isn't safe for very large carts.
 - **Cart isn't cleared after successful checkout** — it's only cleared by explicit user action in the UI.
 - **`discount_claimed` and the discount funnel are cosmetic** — email capture works, but no discount code is ever issued or validated anywhere.
 - **`loadStripe()` is instantiated redundantly** in ~5 components (`ProductCard`, `ProductDetailClient`, `CartDrawer`, `HeroCarousel`, `ProductEmbed`) instead of a shared client module.
@@ -122,7 +122,8 @@ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY, CLERK_SECRET_KEY,
 NEXT_PUBLIC_CLERK_SIGN_IN_URL, NEXT_PUBLIC_CLERK_SIGN_UP_URL,
 NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL, NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL
 NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET (unused)
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
+TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 ADMIN_PASSWORD
 SCRAPERAPI_KEY
 ANTHROPIC_API_KEY
