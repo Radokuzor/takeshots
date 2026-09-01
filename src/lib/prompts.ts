@@ -21,13 +21,8 @@ export const PROMPT_BANK = [
   "Most likely to still be single in 10 years",
 ];
 
-export const ROUND_LENGTH_PRESETS = [
-  { label: "Quick (5 prompts)", value: 5 },
-  { label: "Standard (10 prompts)", value: 10 },
-  { label: "Long (15 prompts)", value: 15 },
-];
-
-export function pickPrompts(count: number): string[] {
-  const shuffled = [...PROMPT_BANK].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
+// The game runs open-ended — no fixed round count. We hand out a shuffled copy
+// of the whole bank and top it up again whenever the host nears the end.
+export function shuffledBank(): string[] {
+  return [...PROMPT_BANK].sort(() => Math.random() - 0.5);
 }

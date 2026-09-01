@@ -3,12 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createGame } from "@/lib/playGame";
-import { ROUND_LENGTH_PRESETS } from "@/lib/prompts";
 
 export default function CreateGamePage() {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [roundLength, setRoundLength] = useState(ROUND_LENGTH_PRESETS[1].value);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
 
   async function handleSubmit(e: React.FormEvent) {
@@ -16,7 +14,7 @@ export default function CreateGamePage() {
     if (!name.trim()) return;
     setStatus("loading");
     try {
-      const code = await createGame(roundLength, name.trim());
+      const code = await createGame(name.trim());
       router.push(`/play/${code}`);
     } catch {
       setStatus("error");
@@ -39,27 +37,13 @@ export default function CreateGamePage() {
               className="w-full px-4 py-3 rounded-xl border border-[#EDEBE5] outline-none focus:ring-2 focus:ring-[#FF6B35]"
             />
           </div>
-          <div>
-            <label className="block text-sm font-bold mb-2">Round length</label>
-            <div className="flex flex-col gap-2">
-              {ROUND_LENGTH_PRESETS.map((preset) => (
-                <button
-                  key={preset.value}
-                  type="button"
-                  onClick={() => setRoundLength(preset.value)}
-                  className={`px-4 py-3 rounded-xl border text-sm font-bold text-left transition ${
-                    roundLength === preset.value
-                      ? "border-[#FF6B35] bg-[#FF6B35]/10"
-                      : "border-[#EDEBE5]"
-                  }`}
-                >
-                  {preset.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <p className="text-sm text-[#1A1A1A]/60">
+            The game starts the moment you create it — share the code and friends
+            can jump in whenever, no waiting room. Prompts keep coming until you
+            end it.
+          </p>
           <button type="submit" disabled={status === "loading"} className="btn-primary mt-2">
-            {status === "loading" ? "Creating..." : "Create Game"}
+            {status === "loading" ? "Starting..." : "Start Game"}
           </button>
           {status === "error" && (
             <p className="text-red-500 text-xs text-center">

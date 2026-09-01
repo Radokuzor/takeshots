@@ -47,12 +47,20 @@ create table if not exists email_subscribers (
 create table if not exists orders (
   id                  uuid primary key default gen_random_uuid(),
   customer_email      text not null,
+  customer_name       text,
+  phone               text,
+  shipping            jsonb,   -- { line1, line2, city, state, postal_code, country }
   stripe_payment_id   text unique,
   items               jsonb not null default '[]',
   total               numeric(10, 2) not null,
   status              text check (status in ('pending','fulfilled','cancelled')) default 'pending',
   created_at          timestamptz default now()
 );
+
+-- If the orders table predates the fulfilment fields, run:
+--   alter table orders add column if not exists customer_name text;
+--   alter table orders add column if not exists phone text;
+--   alter table orders add column if not exists shipping jsonb;
 
 -- Game sessions (placeholder — Firebase will own this later)
 create table if not exists game_sessions (

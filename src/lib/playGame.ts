@@ -15,7 +15,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { generateGameCode } from "@/lib/gameCode";
-import { pickPrompts } from "@/lib/prompts";
+import { shuffledBank } from "@/lib/prompts";
 import { getPlayerId } from "@/lib/playerId";
 
 export interface GamePlayer {
@@ -26,8 +26,7 @@ export interface GamePlayer {
 
 export interface GameDoc {
   code: string;
-  status: "lobby" | "playing" | "reveal" | "ended";
-  roundLength: number;
+  status: "playing" | "ended";
   currentPromptIndex: number;
   prompts: string[];
   hostPlayerId: string;
@@ -38,16 +37,17 @@ export interface RoundVote {
   votedForPlayerId: string;
 }
 
-export async function createGame(roundLength: number, hostName: string) {
+export async function createGame(hostName: string) {
   const code = generateGameCode();
   const hostId = getPlayerId();
 
+  // No lobby — the game is live the moment it's created. Late joiners are
+  // welcome any time, so there's no player count to wait on.
   await setDoc(doc(db, "games", code), {
     code,
-    status: "lobby",
-    roundLength,
+    status: "playing",
     currentPromptIndex: 0,
-    prompts: pickPrompts(roundLength),
+    prompts: shuffledBank(),
     hostPlayerId: hostId,
     createdAt: serverTimestamp(),
   });
@@ -56,6 +56,11 @@ export async function createGame(roundLength: number, hostName: string) {
     name: hostName,
     joinedAt: serverTimestamp(),
     score: 0,
+  });
+
+  await setDoc(doc(db, "games", code, "rounds", "0"), {
+    promptIndex: 0,
+    revealed: false,
   });
 
   return code;
@@ -67,15 +72,6 @@ export async function joinGame(code: string, name: string) {
     name,
     joinedAt: serverTimestamp(),
     score: 0,
-  });
-}
-
-export async function startGame(code: string) {
-  await updateDoc(doc(db, "games", code), { status: "playing", currentPromptIndex: 0 });
-  await setDoc(doc(db, "games", code, "rounds", "0"), {
-    promptIndex: 0,
-    votesIn: 0,
-    revealed: false,
   });
 }
 
@@ -106,17 +102,22 @@ export async function tallyAndReveal(gameCode: string, promptIndex: number) {
   return tally;
 }
 
-export async function nextPrompt(gameCode: string, nextIndex: number, roundLength: number) {
-  if (nextIndex >= roundLength) {
-    await updateDoc(doc(db, "games", gameCode), { status: "ended" });
-    return;
+export async function nextPrompt(gameCode: string, nextIndex: number, prompts: string[]) {
+  const patch: Record<string, unknown> = { currentPromptIndex: nextIndex };
+  // Never run out — top the deck up with another shuffled bank as we approach
+  // the end of the current one.
+  if (nextIndex >= prompts.length - 2) {
+    patch.prompts = [...prompts, ...shuffledBank()];
   }
-  await updateDoc(doc(db, "games", gameCode), { currentPromptIndex: nextIndex });
+  await updateDoc(doc(db, "games", gameCode), patch);
   await setDoc(doc(db, "games", gameCode, "rounds", String(nextIndex)), {
     promptIndex: nextIndex,
-    votesIn: 0,
     revealed: false,
   });
+}
+
+export async function endGame(gameCode: string) {
+  await updateDoc(doc(db, "games", gameCode), { status: "ended" });
 }
 
 export function useGame(gameCode: string) {

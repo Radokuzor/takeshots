@@ -2,7 +2,6 @@
 
 import { use } from "react";
 import { useGame, useRound } from "@/lib/playGame";
-import Lobby from "./Lobby";
 import Voting from "./Voting";
 import Reveal from "./Reveal";
 import Ended from "./Ended";
@@ -30,11 +29,6 @@ export default function GamePage({ params }: { params: Promise<{ code: string }>
     );
   }
 
-  if (game.status === "lobby") return <Lobby game={game} code={code} />;
-  if (game.status === "playing") {
-    return revealed ? <Reveal game={game} code={code} /> : <Voting game={game} code={code} />;
-  }
   if (game.status === "ended") return <Ended game={game} code={code} />;
-
-  return null;
+  return revealed ? <Reveal game={game} code={code} /> : <Voting game={game} code={code} />;
 }

@@ -4,7 +4,7 @@ service cloud.firestore {
     match /games/{gameCode} {
       allow read: if true;
       allow create: if request.resource.data.keys().hasAll(
-        ['code','status','roundLength','currentPromptIndex','prompts','hostPlayerId','createdAt']
+        ['code','status','currentPromptIndex','prompts','hostPlayerId','createdAt']
       );
       allow update: if true; // tighten later: only allow known transitions
 

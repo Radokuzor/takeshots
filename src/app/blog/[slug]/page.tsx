@@ -1,48 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { collection, getDocs, query, where, limit } from "firebase/firestore";
+import { ArrowLeft } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import { supabase } from "@/lib/supabase";
-import { db } from "@/lib/firebase";
-import type { Article, Product } from "@/lib/types";
-import type { ShotContent } from "@/lib/shotContent";
-import ArticlePage from "@/components/ArticlePage";
+import { getAllPosts, getPost } from "@/lib/blog";
 
-export const dynamic = "force-dynamic";
-
-async function getArticle(slug: string): Promise<Article | null> {
-  const { data } = await supabase
-    .from("articles")
-    .select("*")
-    .eq("slug", slug)
-    .eq("category", "blog")
-    .single();
-  return data as Article | null;
-}
-
-async function getShotContent(slug: string): Promise<ShotContent | null> {
-  const snap = await getDocs(query(collection(db, "shot_content"), where("slug", "==", slug), limit(1)));
-  if (snap.empty) return null;
-  const d = snap.docs[0];
-  return { id: d.id, ...d.data() } as ShotContent;
-}
-
-async function getRelated(slugs: string[]): Promise<Article[]> {
-  if (!slugs?.length) return [];
-  const { data } = await supabase.from("articles").select("*").in("slug", slugs).limit(3);
-  return (data as Article[]) ?? [];
-}
-
-function extractProductIds(body: string): string[] {
-  return [...body.matchAll(/\{\{product:([a-f0-9-]+)\}\}/g)].map((m) => m[1]);
-}
-
-async function getEmbeddedProducts(body: string): Promise<Product[]> {
-  const ids = extractProductIds(body);
-  if (!ids.length) return [];
-  const { data } = await supabase.from("products").select("*").in("id", ids);
-  return (data as Product[]) ?? [];
+export function generateStaticParams() {
+  return getAllPosts().map((p) => ({ slug: p.slug }));
 }
 
 export async function generateMetadata({
@@ -51,82 +15,48 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const article = await getArticle(slug);
-  if (article) {
-    return {
-      title: article.title,
-      description: article.tags?.[0] ?? undefined,
-      openGraph: { title: `${article.title} | TakeShots` },
-    };
-  }
-  const shot = await getShotContent(slug);
-  if (shot) {
-    return {
-      title: shot.title,
-      description: shot.metaDescription,
-      openGraph: { title: `${shot.title} | TakeShots` },
-    };
-  }
-  return {};
+  const post = getPost(slug);
+  if (!post) return {};
+  return {
+    title: `${post.title} | TakeShots`,
+    description: post.description,
+    openGraph: { title: `${post.title} | TakeShots`, description: post.description },
+  };
 }
 
 const mdComponents: React.ComponentProps<typeof ReactMarkdown>["components"] = {
-  h2: ({ children }) => <h2 className="font-black text-2xl uppercase mt-10 mb-4">{children}</h2>,
-  h3: ({ children }) => <h3 className="font-bold text-xl mt-6 mb-3">{children}</h3>,
-  p: ({ children }) => <p className="text-[#1A1A1A]/80 leading-relaxed mb-4">{children}</p>,
-  ul: ({ children }) => <ul className="list-disc pl-6 mb-4 flex flex-col gap-1.5">{children}</ul>,
+  h2: ({ children }) => (
+    <h2 className="font-black text-2xl uppercase tracking-tight mt-10 mb-4">{children}</h2>
+  ),
+  h3: ({ children }) => <h3 className="font-bold text-xl mt-8 mb-3">{children}</h3>,
+  p: ({ children }) => (
+    <p className="text-[#1A1A1A]/80 leading-relaxed mb-4">{children}</p>
+  ),
+  ul: ({ children }) => (
+    <ul className="list-disc pl-6 mb-4 flex flex-col gap-2 text-[#1A1A1A]/80">{children}</ul>
+  ),
+  ol: ({ children }) => (
+    <ol className="list-decimal pl-6 mb-4 flex flex-col gap-2 text-[#1A1A1A]/80">{children}</ol>
+  ),
+  a: ({ href, children }) => (
+    <a href={href} className="text-[#FF6B35] font-semibold hover:underline">
+      {children}
+    </a>
+  ),
+  blockquote: ({ children }) => (
+    <blockquote className="border-l-4 border-[#FF6B35] pl-4 italic text-[#1A1A1A]/70 my-6">
+      {children}
+    </blockquote>
+  ),
+  strong: ({ children }) => <strong className="font-bold text-[#1A1A1A]">{children}</strong>,
 };
 
-function ShotContentDetail({ item }: { item: ShotContent }) {
-  return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
-      <Link href="/blog" className="text-sm font-semibold text-[#FF6B35] hover:underline">
-        ← Back to Blog
-      </Link>
-
-      <div className="mt-4 mb-8">
-        <span className="tag mb-3 inline-block">
-          {item.type === "recipe" ? item.spirit ?? "Recipe" : "Guide"}
-        </span>
-        <h1 className="headline text-3xl md:text-5xl mb-3">{item.title}</h1>
-      </div>
-
-      {item.type === "recipe" ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-          <div>
-            <h2 className="font-black text-lg uppercase mb-3">Ingredients</h2>
-            <ul className="list-disc pl-5 flex flex-col gap-1.5 text-[#1A1A1A]/80">
-              {item.ingredients?.map((ing, i) => (
-                <li key={i}>{ing}</li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h2 className="font-black text-lg uppercase mb-3">Instructions</h2>
-            <ol className="list-decimal pl-5 flex flex-col gap-1.5 text-[#1A1A1A]/80">
-              {item.instructions?.map((step, i) => (
-                <li key={i}>{step}</li>
-              ))}
-            </ol>
-          </div>
-        </div>
-      ) : (
-        <article className="prose prose-neutral max-w-none">
-          <ReactMarkdown components={mdComponents}>{item.body ?? ""}</ReactMarkdown>
-        </article>
-      )}
-
-      {item.tags.length > 0 && (
-        <div className="mt-10 pt-6 border-t border-[#EDEBE5] flex flex-wrap gap-2">
-          {item.tags.map((tag) => (
-            <span key={tag} className="tag text-[10px]">
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 export default async function BlogPostPage({
@@ -135,17 +65,43 @@ export default async function BlogPostPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const article = await getArticle(slug);
-  if (article) {
-    const [related, embeddedProducts] = await Promise.all([
-      getRelated(article.related_slugs ?? []),
-      getEmbeddedProducts(article.body ?? ""),
-    ]);
-    return <ArticlePage article={article} relatedArticles={related} embeddedProducts={embeddedProducts} />;
-  }
+  const post = getPost(slug);
+  if (!post) notFound();
 
-  const shot = await getShotContent(slug);
-  if (shot) return <ShotContentDetail item={shot} />;
+  return (
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10">
+      <Link
+        href="/blog"
+        className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#FF6B35] hover:underline"
+      >
+        <ArrowLeft size={15} /> Back to Blog
+      </Link>
 
-  notFound();
+      <div className="mt-5 mb-8">
+        <span className="tag mb-4 inline-block">{post.tag}</span>
+        <h1 className="headline text-3xl md:text-5xl mb-3">{post.title}</h1>
+        <p className="text-[#1A1A1A]/45 text-sm">
+          {formatDate(post.date)} · {post.readingMinutes} min read
+        </p>
+      </div>
+
+      <article>
+        <ReactMarkdown components={mdComponents}>{post.body}</ReactMarkdown>
+      </article>
+
+      {/* CTA */}
+      <div
+        className="mt-12 rounded-3xl p-8 text-center text-white"
+        style={{ background: "linear-gradient(135deg, #FF6B35, #FF4500)" }}
+      >
+        <h2 className="font-black text-2xl uppercase mb-2">Take Shots Like Never Before</h2>
+        <p className="text-white/80 mb-5">
+          The Take V2 turns every shot into a smooth, no-spill chaser. $19.99, ships to the US &amp; Canada.
+        </p>
+        <Link href="/" className="btn-primary bg-white !text-[#FF4500] inline-flex">
+          Get the Take V2
+        </Link>
+      </div>
+    </div>
+  );
 }

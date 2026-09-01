@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePlayers, useVotes, castVote, tallyAndReveal, type GameDoc } from "@/lib/playGame";
 import { getPlayerId } from "@/lib/playerId";
+import JoinHint from "./JoinHint";
 
 export default function Voting({ game, code }: { game: GameDoc; code: string }) {
   const players = usePlayers(code);
@@ -28,7 +29,7 @@ export default function Voting({ game, code }: { game: GameDoc; code: string }) 
     <div className="min-h-[70vh] flex flex-col items-center justify-center px-4 py-20">
       <div className="w-full max-w-sm">
         <p className="text-sm font-bold text-[#1A1A1A]/60 text-center mb-2">
-          PROMPT {game.currentPromptIndex + 1} OF {game.roundLength}
+          PROMPT {game.currentPromptIndex + 1}
         </p>
         <h1 className="headline text-2xl text-center mb-8">
           {game.prompts[game.currentPromptIndex]}
@@ -52,8 +53,27 @@ export default function Voting({ game, code }: { game: GameDoc; code: string }) 
         </div>
 
         <p className="text-center text-sm text-[#1A1A1A]/60">
-          {votes.length} of {players.length} voted
+          {votes.length} vote{votes.length === 1 ? "" : "s"} in
         </p>
+
+        {isHost && votes.length > 0 && !allVoted && (
+          <button
+            onClick={() => {
+              setRevealing(true);
+              tallyAndReveal(code, game.currentPromptIndex).finally(() =>
+                setRevealing(false)
+              );
+            }}
+            disabled={revealing}
+            className="btn-ghost w-full mt-4 disabled:opacity-40"
+          >
+            Reveal results now
+          </button>
+        )}
+
+        <div className="flex flex-col items-center">
+          <JoinHint code={code} />
+        </div>
       </div>
     </div>
   );

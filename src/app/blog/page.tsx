@@ -1,75 +1,51 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { collection, getDocs, orderBy, query } from "firebase/firestore";
-import { supabase } from "@/lib/supabase";
-import { db } from "@/lib/firebase";
-import type { Article } from "@/lib/types";
-import type { ShotContent } from "@/lib/shotContent";
-
-export const dynamic = "force-dynamic";
+import { getAllPosts } from "@/lib/blog";
 
 export const metadata: Metadata = {
-  title: "Blog — Gift Ideas, Party Tips & Shot Guides",
-  description: "Gift guides, party planning tips, shot recipes, and everything in between.",
+  title: "Blog — Shot Tips, Chaser Guides & Party Hacks | TakeShots",
+  description:
+    "How to take shots without the burn, the best chasers for every liquor, wellness-shot hacks, and party tricks — quick reads from the TakeShots crew.",
 };
 
-interface BlogCard {
-  key: string;
-  href: string;
-  title: string;
-  tag: string;
-  date: string;
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
-async function getArticles(): Promise<Article[]> {
-  const { data } = await supabase
-    .from("articles")
-    .select("*")
-    .eq("category", "blog")
-    .order("last_updated", { ascending: false });
-  return (data as Article[]) ?? [];
-}
-
-async function getShotContent(): Promise<ShotContent[]> {
-  const snap = await getDocs(query(collection(db, "shot_content"), orderBy("createdAt", "desc")));
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as ShotContent);
-}
-
-export default async function BlogIndexPage() {
-  const [articles, shotContent] = await Promise.all([getArticles(), getShotContent()]);
-
-  const cards: BlogCard[] = [
-    ...articles.map((a) => ({
-      key: a.id,
-      href: `/blog/${a.slug}`,
-      title: a.title,
-      tag: a.tags?.[0] ?? "Blog",
-      date: a.last_updated,
-    })),
-    ...shotContent.map((s) => ({
-      key: s.id,
-      href: `/blog/${s.slug}`,
-      title: s.title,
-      tag: s.type === "recipe" ? s.spirit ?? "Recipe" : "Guide",
-      date: s.createdAt,
-    })),
-  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+export default function BlogIndexPage() {
+  const posts = getAllPosts();
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
-      <h1 className="headline mb-10">Blog</h1>
-      {cards.length === 0 ? (
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12">
+      <span className="tag mb-4 inline-block">The TakeShots Blog</span>
+      <h1 className="headline mb-3">Shots, Chasers &amp; Party Hacks</h1>
+      <p className="text-[#1A1A1A]/60 text-lg mb-10 max-w-xl">
+        Quick reads on taking shots smoother, chasing smarter, and keeping the party going.
+      </p>
+
+      {posts.length === 0 ? (
         <p className="text-[#1A1A1A]/50">Posts coming soon.</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {cards.map((c) => (
-            <Link key={c.key} href={c.href} className="card p-6 group flex flex-col gap-2">
-              <span className="tag text-[10px] w-fit">{c.tag}</span>
-              <h2 className="font-black text-lg leading-snug group-hover:text-[#FF6B35] transition-colors">
-                {c.title}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {posts.map((p) => (
+            <Link
+              key={p.slug}
+              href={`/blog/${p.slug}`}
+              className="card p-6 group flex flex-col gap-3"
+            >
+              <span className="tag text-[10px] w-fit">{p.tag}</span>
+              <h2 className="font-black text-xl leading-snug group-hover:text-[#FF6B35] transition-colors">
+                {p.title}
               </h2>
-              <p className="text-[#1A1A1A]/50 text-xs mt-auto pt-2">
-                {new Date(c.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+              <p className="text-[#1A1A1A]/60 text-sm leading-relaxed line-clamp-3">
+                {p.description}
+              </p>
+              <p className="text-[#1A1A1A]/40 text-xs mt-auto pt-2">
+                {formatDate(p.date)} · {p.readingMinutes} min read
               </p>
             </Link>
           ))}

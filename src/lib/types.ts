@@ -66,9 +66,21 @@ export interface OrderItem {
   quantity: number;
 }
 
+export interface ShippingAddress {
+  line1: string | null;
+  line2: string | null;
+  city: string | null;
+  state: string | null;
+  postal_code: string | null;
+  country: string | null;
+}
+
 export interface Order {
   id: string;
   customer_email: string;
+  customer_name: string | null;
+  phone: string | null;
+  shipping: ShippingAddress | null;
   stripe_payment_id: string | null;
   items: OrderItem[];
   total: number;

@@ -10,9 +10,7 @@ export default function JoinGamePage() {
   const router = useRouter();
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "not_found" | "started" | "error">(
-    "idle"
-  );
+  const [status, setStatus] = useState<"idle" | "loading" | "not_found" | "error">("idle");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -21,12 +19,8 @@ export default function JoinGamePage() {
     setStatus("loading");
     try {
       const snap = await getDoc(doc(db, "games", normalizedCode));
-      if (!snap.exists()) {
+      if (!snap.exists() || snap.data().status === "ended") {
         setStatus("not_found");
-        return;
-      }
-      if (snap.data().status !== "lobby") {
-        setStatus("started");
         return;
       }
       await joinGame(normalizedCode, name.trim());
@@ -68,10 +62,9 @@ export default function JoinGamePage() {
             {status === "loading" ? "Joining..." : "Join Game"}
           </button>
           {status === "not_found" && (
-            <p className="text-red-500 text-xs text-center">No game found with that code.</p>
-          )}
-          {status === "started" && (
-            <p className="text-red-500 text-xs text-center">That game has already started.</p>
+            <p className="text-red-500 text-xs text-center">
+              No active game found with that code.
+            </p>
           )}
           {status === "error" && (
             <p className="text-red-500 text-xs text-center">Something went wrong. Try again.</p>

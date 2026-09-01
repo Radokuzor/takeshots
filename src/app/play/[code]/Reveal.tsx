@@ -1,7 +1,8 @@
 "use client";
 
-import { usePlayers, useVotes, nextPrompt, type GameDoc } from "@/lib/playGame";
+import { usePlayers, useVotes, nextPrompt, endGame, type GameDoc } from "@/lib/playGame";
 import { getPlayerId } from "@/lib/playerId";
+import JoinHint from "./JoinHint";
 
 export default function Reveal({ game, code }: { game: GameDoc; code: string }) {
   const players = usePlayers(code);
@@ -40,17 +41,28 @@ export default function Reveal({ game, code }: { game: GameDoc; code: string }) 
         </div>
 
         {isHost ? (
-          <button
-            onClick={() => nextPrompt(code, game.currentPromptIndex + 1, game.roundLength)}
-            className="btn-primary w-full"
-          >
-            {game.currentPromptIndex + 1 >= game.roundLength ? "See Final Scores" : "Next Prompt"}
-          </button>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() =>
+                nextPrompt(code, game.currentPromptIndex + 1, game.prompts)
+              }
+              className="btn-primary w-full"
+            >
+              Next Prompt
+            </button>
+            <button onClick={() => endGame(code)} className="btn-ghost w-full">
+              End Game &amp; See Scores
+            </button>
+          </div>
         ) : (
           <p className="text-sm text-[#1A1A1A]/60 text-center">
             Waiting for the host to continue...
           </p>
         )}
+
+        <div className="flex flex-col items-center">
+          <JoinHint code={code} />
+        </div>
       </div>
     </div>
   );
