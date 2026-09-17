@@ -62,6 +62,53 @@ create table if not exists orders (
 --   alter table orders add column if not exists phone text;
 --   alter table orders add column if not exists shipping jsonb;
 
+-- Analytics sessions — one row per browser-tab session, upserted by
+-- /api/analytics/session-end, read by /admin/analytics.
+create table if not exists analytics_sessions (
+  id                uuid primary key default gen_random_uuid(),
+  session_id        text unique not null,
+  visitor_id        text,
+  visit_number      integer not null default 1,
+  is_new_visitor    boolean not null default true,
+  first_seen_at     timestamptz,
+  started_at        timestamptz not null,
+  ended_at          timestamptz not null,
+  duration_ms       integer not null default 0,
+  pages             jsonb not null default '[]',  -- [{ path, enteredAt, exitedAt, maxScrollPct }]
+  page_count        integer not null default 0,
+  landing_page      text,
+  exit_page         text,
+  max_scroll_pct    integer not null default 0,
+  referrer          text,
+  referrer_host     text,
+  utm_source        text,
+  utm_medium        text,
+  utm_campaign      text,
+  utm_term          text,
+  utm_content       text,
+  events            jsonb not null default '[]',  -- [{ name, path, at, props }]
+  event_count       integer not null default 0,
+  reached_checkout  boolean not null default false,
+  purchased         boolean not null default false,
+  device_type       text,
+  browser           text,
+  os                text,
+  screen            text,
+  viewport          text,
+  language          text,
+  timezone          text,
+  connection        text,
+  touch             boolean not null default false,
+  country           text,
+  region            text,
+  city              text,
+  user_agent        text,
+  created_at        timestamptz default now(),
+  updated_at        timestamptz default now()
+);
+create index if not exists analytics_sessions_started_at_idx on analytics_sessions (started_at desc);
+create index if not exists analytics_sessions_visitor_idx on analytics_sessions (visitor_id);
+
 -- Game sessions (placeholder — Firebase will own this later)
 create table if not exists game_sessions (
   id               uuid primary key default gen_random_uuid(),
@@ -75,6 +122,7 @@ alter table articles          enable row level security;
 alter table email_subscribers enable row level security;
 alter table orders            enable row level security;
 alter table game_sessions     enable row level security;
+alter table analytics_sessions enable row level security;  -- service role only
 
 -- Public read for products and articles
 create policy "Public read products"  on products  for select using (true);

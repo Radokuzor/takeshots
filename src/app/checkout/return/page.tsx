@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { useCart } from "@/lib/cart";
+import { trackEvent } from "@/lib/analytics";
 
 export default function CheckoutReturnPage() {
   return (
@@ -32,6 +33,7 @@ function CheckoutReturnContent() {
           setStatus("complete");
           setEmail(data.customerEmail);
           setBuyNowItem(null);
+          trackEvent("purchase", { payment_intent: paymentIntentId });
           try {
             sessionStorage.setItem("ts_purchased", "1");
           } catch {

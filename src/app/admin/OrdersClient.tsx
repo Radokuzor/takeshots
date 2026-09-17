@@ -1,7 +1,8 @@
 "use client";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Package, Check, X, ExternalLink, Copy } from "lucide-react";
+import Link from "next/link";
+import { Package, Check, X, ExternalLink, Copy, BarChart3 } from "lucide-react";
 import type { Order } from "@/lib/types";
 
 type Filter = "pending" | "fulfilled" | "cancelled" | "all";
@@ -219,9 +220,17 @@ export default function OrdersClient({ orders }: { orders: Order[] }) {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
       <div className="flex items-baseline justify-between mb-6">
         <h1 className="font-black text-3xl uppercase">Fulfilment</h1>
-        <p className="text-sm text-[#1A1A1A]/50">
-          {counts.all} orders · ${revenue.toFixed(2)}
-        </p>
+        <div className="flex items-baseline gap-4">
+          <p className="text-sm text-[#1A1A1A]/50">
+            {counts.all} orders · ${revenue.toFixed(2)}
+          </p>
+          <Link
+            href="/admin/analytics"
+            className="inline-flex items-center gap-1 text-sm font-bold text-[#FF4500] hover:underline"
+          >
+            <BarChart3 size={15} /> Analytics
+          </Link>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2 mb-6">

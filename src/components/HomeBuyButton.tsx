@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Minus, Plus, ShoppingBag } from "lucide-react";
 import { useCart } from "@/lib/cart";
 import type { Product } from "@/lib/types";
+import { trackEvent } from "@/lib/analytics";
 
 interface Props {
   name: string;
@@ -30,6 +31,7 @@ export default function HomeBuyButton({ name, price, photoUrl, className, compac
       photo_url: photoUrl ?? null,
       created_at: new Date().toISOString(),
     };
+    trackEvent("buy_now_click", { quantity, value: +(price * quantity).toFixed(2), placement: compact ? "compact" : "full" });
     setBuyNowItem({ product, quantity });
     router.push("/checkout");
   }

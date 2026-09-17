@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { joinGame } from "@/lib/playGame";
+import { trackEvent } from "@/lib/analytics";
 
 function JoinGameForm() {
   const router = useRouter();
@@ -27,6 +28,7 @@ function JoinGameForm() {
         return;
       }
       await joinGame(normalizedCode, name.trim());
+      trackEvent("game_joined", { code: normalizedCode });
       router.push(`/play/${normalizedCode}`);
     } catch {
       setStatus("error");

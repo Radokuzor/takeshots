@@ -2,12 +2,16 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import EmailCapture from "@/components/EmailCapture";
+import { trackEvent } from "@/lib/analytics";
 
 export default function DiscountModal() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const handler = () => setOpen(true);
+    const handler = () => {
+      trackEvent("discount_popup_open");
+      setOpen(true);
+    };
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     window.addEventListener("open-discount-popup", handler);
     window.addEventListener("keydown", onKey);

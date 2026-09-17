@@ -29,6 +29,9 @@ src/app/
   checkout/return/         Post-payment confirmation page (polls `/api/checkout/session-status`)
   admin/                  Order fulfillment dashboard only (`OrdersClient.tsx`) — gated by a cookie, not Clerk. noindex (layout.tsx).
   admin/login/             Password form → POST /api/admin/auth
+  admin/analytics/         Analytics dashboard (AnalyticsClient.tsx) — its own password gate (ANALYTICS_PASSWORD, default "test1234"), separate from ADMIN_PASSWORD
+ANALYTICS_PASSWORD        — optional, defaults to "test1234"
+  admin/analytics/login/   Password form → POST /api/admin/analytics-auth
   privacy/, terms/         Static legal pages
   api/checkout/            Creates a Stripe PaymentIntent from the current buy-now item
   api/checkout/session-status/  Polled by /checkout/return to confirm payment succeeded
@@ -36,7 +39,8 @@ src/app/
   api/admin/auth/            Sets the admin_auth cookie
   api/admin/orders/          Reads orders for the admin dashboard
   api/webhooks/stripe/       Verifies signature, writes `orders` row, pings Telegram
-  api/analytics/session-end/ AnalyticsTracker beacon endpoint
+  api/analytics/session-end/ AnalyticsTracker beacon endpoint — upserts analytics_sessions (merging snapshots) and pings Telegram once per session
+  api/admin/analytics-auth/  Sets/clears the analytics_auth cookie (sha256 of the password, not a bare "1")
   sitemap.ts, robots.ts      Static — just `/`, `/play`, `/about`, `/privacy`, `/terms`. No dynamic content to enumerate anymore.
   icon.tsx, apple-icon.tsx   Dynamically generated favicons (next/og)
 
@@ -50,7 +54,10 @@ src/lib/
   playerId.ts, gameCode.ts, prompts.ts   /play support (localStorage player id, game code gen, prompt bank)
   stripe.ts              Server Stripe client
   cart.ts                Zustand store holding just `buyNowItem` — no multi-item cart
-  telegram.ts             Order-notification helper used by the webhook
+  telegram.ts             notifyTelegram (HTML parse mode, prefixes the site name — pass visitor text through esc())
+  analytics.ts            Client: trackEvent() (window "ts-track" event), attribution in sessionStorage, payload types
+  analyticsServer.ts      Server: UA parsing, geo from Vercel/Cloudflare headers, analytics password gate
+  analyticsStats.ts       Pure stats computation for /admin/analytics
   types.ts                Product (trimmed — id/name/description/price/photo_url/created_at), EmailSubscriber, CartItem, OrderItem, ShippingAddress, Order, Database types
 
 supabase/schema.sql       Postgres schema. Still defines `products` and `articles` tables from the pre-pivot gift-directory era — see Data Model.
@@ -86,6 +93,7 @@ If you're asked to add user accounts, gate a customer-facing feature, or add rol
 - **articles** — also still in the schema (near-me/blog content), also completely unused by any route now. Orphaned, not deleted — see Known Gaps.
 - **email_subscribers** — `email` (unique), `source` (`hero`|`popup`|`footer`|`play_page`), `discount_claimed` (boolean field exists but **nothing ever sets it true** — no discount code system is implemented despite the funnel UI implying one).
 - **orders** — the only actively-used data table besides email_subscribers. Written by the Stripe webhook (`payment_intent.succeeded`), read by the admin dashboard. `items` is a jsonb array of `{product_id, name, price, quantity}` built from Stripe PaymentIntent metadata at checkout time, not a foreign key into `products`.
+- **analytics_sessions** — one row per browser-tab session (pages, events, scroll, UTM/referrer, device, geo, checkout/purchase flags). Written only by `/api/analytics/session-end` (service role), read by `/admin/analytics`. Checkout also forwards attribution into Stripe PaymentIntent metadata (`ts_*` keys) so the order Telegram message can show the sale's source.
 - **game_sessions** — placeholder, still unused; Firestore owns `/play` state, not this table.
 
 RLS: public SELECT on `products`/`articles` (both now moot since nothing queries them), public INSERT on `email_subscribers`. `orders`/`game_sessions` have RLS on with no public policies (service-role only).

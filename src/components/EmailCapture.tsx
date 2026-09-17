@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { trackEvent } from "@/lib/analytics";
 
 interface Props {
   source: "hero" | "popup" | "footer" | "play_page";
@@ -19,6 +20,7 @@ export default function EmailCapture({ source, dark = false }: Props) {
     const { error } = await (supabase as any)
       .from("email_subscribers")
       .upsert({ email, source, discount_claimed: false }, { onConflict: "email" });
+    if (!error) trackEvent("email_signup", { source });
     setStatus(error ? "error" : "done");
   }
 

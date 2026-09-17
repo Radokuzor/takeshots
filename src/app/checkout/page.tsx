@@ -7,6 +7,7 @@ import { loadStripe, type Appearance } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import { useCart } from "@/lib/cart";
 import type { CartItem } from "@/lib/types";
+import { getAttribution } from "@/lib/analytics";
 import PaymentForm from "./PaymentForm";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -97,7 +98,7 @@ export default function CheckoutPage() {
     fetch("/api/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items: checkoutItems }),
+      body: JSON.stringify({ items: checkoutItems, attribution: getAttribution() }),
     })
       .then((res) => res.json())
       .then((data) => setClientSecret(data.clientSecret));

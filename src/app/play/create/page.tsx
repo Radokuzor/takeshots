@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createGame } from "@/lib/playGame";
+import { trackEvent } from "@/lib/analytics";
 
 export default function CreateGamePage() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function CreateGamePage() {
     setStatus("loading");
     try {
       const code = await createGame(name.trim());
+      trackEvent("game_created", { code });
       router.push(`/play/${code}`);
     } catch {
       setStatus("error");
