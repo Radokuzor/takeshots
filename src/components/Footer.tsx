@@ -2,8 +2,24 @@ import Link from "next/link";
 import GetDiscountButton from "@/components/GetDiscountButton";
 
 const footerLinks = [
-  { label: "Play", href: "/play" },
-  { label: "About Us", href: "/about" },
+  {
+    title: "Shop",
+    links: [
+      { label: "Take V2", href: "/#buy" },
+      { label: "How It Works", href: "/#how-it-works" },
+      { label: "Reviews", href: "/#reviews" },
+      { label: "FAQ", href: "/#faq" },
+    ],
+  },
+  {
+    title: "Company",
+    links: [
+      { label: "About Us", href: "/about" },
+      { label: "Play Most Likely To", href: "/play" },
+      { label: "Privacy Policy", href: "/privacy" },
+      { label: "Terms of Service", href: "/terms" },
+    ],
+  },
 ];
 
 function TikTokIcon() {
@@ -24,64 +40,65 @@ function InstagramIcon() {
   );
 }
 
+const socials = [
+  { label: "TikTok", href: "https://tiktok.com/@takeshots", Icon: TikTokIcon },
+  { label: "Instagram", href: "https://instagram.com/takeshots", Icon: InstagramIcon },
+];
+
 export default function Footer() {
   return (
-    <footer className="bg-[#EDEBE5] mt-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-          {/* Brand */}
-          <div>
-            <p className="font-black text-xl uppercase tracking-tight mb-2">TakeShots</p>
-            <p className="text-sm text-[#1A1A1A]/60">The Take V2 — smoother shots, every time.</p>
-          </div>
-
-          {/* Links */}
-          <nav className="flex flex-col gap-3">
-            {footerLinks.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className="text-sm font-semibold uppercase tracking-wide hover:text-[#FF6B35] transition-colors"
-              >
-                {l.label}
-              </Link>
-            ))}
-          </nav>
-
-          {/* Social + CTA */}
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-4">
-              <a
-                href="https://tiktok.com/@takeshots"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="TikTok"
-                className="hover:text-[#FF6B35] transition-colors"
-              >
-                <TikTokIcon />
-              </a>
-              <a
-                href="https://instagram.com/takeshots"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Instagram"
-                className="hover:text-[#FF6B35] transition-colors"
-              >
-                <InstagramIcon />
-              </a>
+    <footer className="bg-ink text-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-16 pb-8">
+        <div className="grid grid-cols-2 md:grid-cols-[1.5fr_1fr_1fr] gap-10">
+          <div className="col-span-2 md:col-span-1">
+            <p className="font-display font-extrabold text-2xl uppercase tracking-tight flex items-center gap-2 mb-3">
+              <span aria-hidden className="inline-block w-7 h-7 rounded-lg bg-gradient-to-br from-coral to-coral-deep rotate-6" />
+              TakeShots
+            </p>
+            <p className="text-white/60 max-w-xs mb-6">The Take V2 — one straw, every shot smoother.</p>
+            <div className="flex flex-wrap items-center gap-3">
+              {socials.map(({ label, href, Icon }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={label}
+                  className="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center hover:bg-coral transition-colors"
+                >
+                  <Icon />
+                </a>
+              ))}
+              <GetDiscountButton className="btn-primary !min-h-11 !py-2 text-sm ml-1">Get 20% Off</GetDiscountButton>
             </div>
-            <GetDiscountButton className="btn-primary text-center text-sm w-fit">
-              Get 20% Off
-            </GetDiscountButton>
           </div>
+
+          {footerLinks.map((col) => (
+            <nav key={col.title} aria-label={col.title}>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/40 mb-4">{col.title}</p>
+              <ul className="flex flex-col gap-3">
+                {col.links.map((l) => (
+                  <li key={l.href}>
+                    <Link href={l.href} className="text-sm text-white/80 hover:text-coral transition-colors">
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          ))}
         </div>
 
-        <div className="mt-10 pt-6 border-t border-[#1A1A1A]/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#1A1A1A]/50">
-          <p>© 2026 TakeShots. All rights reserved.</p>
-          <div className="flex gap-4">
-            <Link href="/privacy" className="hover:text-[#1A1A1A] transition-colors">Privacy Policy</Link>
-            <Link href="/terms" className="hover:text-[#1A1A1A] transition-colors">Terms of Service</Link>
-          </div>
+        <p
+          aria-hidden
+          className="font-display font-extrabold uppercase tracking-tighter leading-none text-center text-[14vw] xl:text-[11.5rem] mt-14 bg-gradient-to-b from-white/15 to-white/0 bg-clip-text text-transparent select-none"
+        >
+          TakeShots
+        </p>
+
+        <div className="mt-4 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-white/45">
+          <p>© {new Date().getFullYear()} TakeShots. All rights reserved.</p>
+          <p>Please drink responsibly. 21+ only for alcoholic use.</p>
         </div>
       </div>
     </footer>

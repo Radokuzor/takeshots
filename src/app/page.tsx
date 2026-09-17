@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { Star, Zap, ShieldCheck, MapPin, Sparkles } from "lucide-react";
+import { Star, Zap, ShieldCheck, MapPin, Sparkles, Check, Lock, Truck, Leaf, Plus } from "lucide-react";
 import EmailCapture from "@/components/EmailCapture";
 import ProductGallery from "@/components/ProductGallery";
 import BrandCarousel from "@/components/BrandCarousel";
 import HomeBuyButton from "@/components/HomeBuyButton";
+import ReviewMarquee from "@/components/ReviewMarquee";
+import StickyBuyBar from "@/components/StickyBuyBar";
 
 export const metadata: Metadata = {
   title: "The Take V2 — Shot Holder & Straw | TakeShots",
@@ -214,228 +216,399 @@ const productJsonLd = {
   })),
 };
 
+const faqs = [
+  {
+    q: "How much does the Take hold?",
+    a: "Each Take securely holds 1 fl oz. For the smoothest pour, fill it about half to three-quarters full, then drop it into your chaser.",
+  },
+  {
+    q: "Will it leak in my bag?",
+    a: "A twistable cap seals it shut and a one-way valve lets liquid flow through the straw, never back out, so it's ready to toss in a bag, purse, or golf bag.",
+  },
+  {
+    q: "What drinks and glasses does it work with?",
+    a: "It's built to fit standard bottles and drink glasses. Use any chaser or mixed drink you like. It's not just for alcohol either: people use it for wellness shots and bitter supplements too.",
+  },
+  {
+    q: "What is it made of?",
+    a: "BPA-free, medical-grade Tritan. It's reusable and refillable, so you're not burning through single-use plastic every party.",
+  },
+  {
+    q: "How do I keep it clean?",
+    a: "Unscrew the lid and rinse it out after each use, especially after pulpy or sugary drinks, and let it dry fully before sealing it back up.",
+  },
+  {
+    q: "Where do you ship?",
+    a: "We ship to the US and Canada. Checkout is handled securely by Stripe, so your card details never touch our servers.",
+  },
+];
+
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((f) => ({
+    "@type": "Question",
+    name: f.q,
+    acceptedAnswer: { "@type": "Answer", text: f.a },
+  })),
+};
+
+const heroBullets = ["Shot + chaser in one sip", "No-spill seal & one-way valve", "Fits any standard bottle or glass"];
+
+const trustBadges = [
+  { icon: Truck, label: "Ships to US & Canada" },
+  { icon: Lock, label: "Secure Stripe checkout" },
+  { icon: Leaf, label: "BPA-free & reusable" },
+];
+
+const occasions = [
+  "Game Days",
+  "Beach Trips",
+  "Pool Parties",
+  "Tailgates",
+  "Birthdays",
+  "Festivals",
+  "Bachelorettes",
+  "Wellness Shots",
+];
+
+function Stars({ rating, size = 16 }: { rating: number; size?: number }) {
+  return (
+    <div className="flex items-center gap-0.5 text-coral" aria-label={`${rating} out of 5 stars`}>
+      {Array.from({ length: 5 }).map((_, i) => {
+        const filled = i < Math.round(rating);
+        return <Star key={i} size={size} fill={filled ? "currentColor" : "none"} strokeWidth={filled ? 0 : 1.5} />;
+      })}
+    </div>
+  );
+}
+
+function FeatureIcon({ icon: Icon }: { icon: typeof Zap }) {
+  return (
+    <span className="w-12 h-12 shrink-0 rounded-2xl bg-gradient-to-br from-coral to-coral-deep text-white flex items-center justify-center shadow-[0_10px_24px_-10px_rgba(255,69,0,0.7)]">
+      <Icon size={22} />
+    </span>
+  );
+}
+
+function SectionHeading({ eyebrow, title, sub }: { eyebrow: string; title: string; sub?: string }) {
+  return (
+    <div className="text-center max-w-2xl mx-auto mb-10 md:mb-14">
+      <span className="eyebrow mb-3">{eyebrow}</span>
+      <h2 className="headline text-[2rem] md:text-5xl">{title}</h2>
+      {sub && <p className="mt-4 text-base md:text-lg text-ink/65">{sub}</p>}
+    </div>
+  );
+}
+
 export default function HomePage() {
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
 
-      {/* ── Hero: The Product ── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10 md:py-20 grid md:grid-cols-2 gap-8 md:gap-12 items-center">
-        <ProductGallery images={PRODUCT.images} productName={PRODUCT.name} />
+      {/* ── Hero / buy box ── */}
+      <section id="buy" className="relative overflow-hidden">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-40 -left-40 w-[36rem] h-[36rem] rounded-full bg-coral/15 blur-3xl"
+        />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-14 md:pt-14 md:pb-24 grid md:grid-cols-2 gap-8 lg:gap-16 items-center">
+          <ProductGallery images={PRODUCT.images} productName={PRODUCT.name} />
 
-        <div className="min-w-0">
-          <span className="tag mb-5 inline-block">Introducing</span>
-          <h1 className="headline mb-5">
-            {PRODUCT.tagline.split(" ").slice(0, 2).join(" ")}
-            <br />
-            {PRODUCT.tagline.split(" ").slice(2).join(" ")}
-          </h1>
-          <p className="text-lg text-[#1A1A1A]/70 max-w-md mb-6 leading-relaxed">
-            {PRODUCT.description}
-          </p>
-
-          <div className="flex items-center gap-3 mb-8">
-            <div className="flex items-center gap-1 text-[#FF6B35]">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Star
-                  key={i}
-                  size={16}
-                  fill={i < Math.round(PRODUCT.rating) ? "currentColor" : "none"}
-                />
-              ))}
-            </div>
-            <span className="text-sm text-[#1A1A1A]/60 font-medium">
-              {PRODUCT.rating} · {PRODUCT.reviewCount}+ reviews
-            </span>
-          </div>
-
-          <div className="flex items-baseline gap-3 mb-8">
-            <span className="text-3xl font-black">${PRODUCT.price.toFixed(2)}</span>
-            <span className="text-sm text-[#1A1A1A]/50 font-medium">{PRODUCT.color} · 1oz</span>
-          </div>
-
-          <div className="flex flex-wrap gap-4">
-            <HomeBuyButton
-              name={PRODUCT.name}
-              price={PRODUCT.price}
-              photoUrl={PRODUCT.images[0]}
-              className="btn-primary text-base flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-            />
-            <a href="#how-it-works" className="btn-ghost text-base">
-              See How It Works
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Brand Story ── */}
-      <section className="bg-[#05171B]">
-        {/* Mobile: image on top, copy below (an overlay band crops badly at narrow widths) */}
-        <div className="md:hidden">
-          <div className="relative w-full aspect-[4/3]">
-            <Image src={BRAND_STORY.image} alt={BRAND_STORY.title} fill className="object-cover" sizes="100vw" />
-          </div>
-          <div className="px-4 py-10">
-            <span className="text-[#FF6B35] font-bold text-xs uppercase tracking-widest mb-3 block">
-              {BRAND_STORY.eyebrow}
-            </span>
-            <h2 className="text-white font-black text-2xl uppercase leading-tight mb-3">{BRAND_STORY.title}</h2>
-            <p className="text-white/80 leading-relaxed text-sm">{BRAND_STORY.body}</p>
-          </div>
-        </div>
-
-        {/* Desktop: full-bleed overlay */}
-        <div className="hidden md:block relative w-full aspect-[32/9] min-h-[380px]">
-          <Image src={BRAND_STORY.image} alt={BRAND_STORY.title} fill className="object-cover" sizes="100vw" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
-          <div className="relative h-full max-w-7xl mx-auto px-6 flex items-center">
-            <div className="max-w-lg">
-              <span className="text-[#FF6B35] font-bold text-xs uppercase tracking-widest mb-3 block">
-                {BRAND_STORY.eyebrow}
+          <div className="min-w-0">
+            <a href="#reviews" className="inline-flex flex-wrap items-center gap-2 mb-5 group">
+              <Stars rating={PRODUCT.rating} />
+              <span className="text-sm font-semibold text-ink/70 group-hover:text-ink">
+                {PRODUCT.rating} · {PRODUCT.reviewCount}+ reviews
               </span>
-              <h2 className="text-white font-black text-4xl uppercase leading-tight mb-4">{BRAND_STORY.title}</h2>
-              <p className="text-white/80 leading-relaxed text-base">{BRAND_STORY.body}</p>
+            </a>
+
+            <h1 className="headline text-[2.6rem] sm:text-6xl lg:text-7xl mb-5">
+              Take Shots{" "}
+              <span className="bg-gradient-to-r from-coral to-coral-deep bg-clip-text text-transparent">
+                Like Never Before
+              </span>
+            </h1>
+
+            <p className="text-base sm:text-lg text-ink/70 max-w-lg mb-6 leading-relaxed">
+              The patented shot holder &amp; straw that takes you from shot to chaser in one smooth sip. No fumbling,
+              no spilling, no lingering burn.
+            </p>
+
+            <ul className="grid gap-2.5 mb-7">
+              {heroBullets.map((b) => (
+                <li key={b} className="flex items-center gap-3 font-medium">
+                  <span className="w-6 h-6 rounded-full bg-coral/15 text-coral-deep flex items-center justify-center shrink-0">
+                    <Check size={14} strokeWidth={3} />
+                  </span>
+                  {b}
+                </li>
+              ))}
+            </ul>
+
+            <div className="rounded-3xl bg-white border border-ink/5 p-5 sm:p-6 shadow-[0_2px_20px_-10px_rgba(0,0,0,0.12)]">
+              <div className="flex items-end justify-between gap-3 mb-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-ink/50 mb-1">
+                    Take V2 · {PRODUCT.color}<span className="hidden sm:inline"> · 1 fl oz</span>
+                  </p>
+                  <p className="font-display text-4xl font-extrabold tracking-tight">${PRODUCT.price.toFixed(2)}</p>
+                </div>
+                <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-bold text-emerald-700 bg-emerald-50 rounded-full px-3 py-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" /> In stock
+                </span>
+              </div>
+              <HomeBuyButton
+                name={PRODUCT.name}
+                price={PRODUCT.price}
+                photoUrl={PRODUCT.images[0]}
+                className="btn-primary text-base disabled:opacity-70 disabled:cursor-not-allowed"
+              />
+              <div className="grid grid-cols-3 gap-2 mt-5 pt-5 border-t border-ink/5">
+                {trustBadges.map((t) => (
+                  <div key={t.label} className="flex flex-col items-center text-center gap-1.5">
+                    <t.icon size={18} className="text-coral-deep" />
+                    <span className="text-[11px] sm:text-xs font-semibold text-ink/60 leading-tight">{t.label}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Features ── */}
-      <section className="bg-[#EDEBE5] py-12 md:py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <h2 className="headline text-center mb-8 md:mb-10 text-2xl md:text-4xl">
-            Why You&apos;ll Love the Take
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {features.map((f) => (
-              <div key={f.title} className="card p-6 flex flex-col gap-3">
-                <div
-                  className="w-11 h-11 rounded-xl flex items-center justify-center text-white"
-                  style={{ background: "linear-gradient(135deg, #FF6B35, #FF4500)" }}
-                >
-                  <f.icon size={20} />
-                </div>
-                <h3 className="font-black text-base uppercase tracking-tight">{f.title}</h3>
-                <p className="text-sm text-[#1A1A1A]/65 leading-relaxed">{f.body}</p>
-              </div>
+      {/* ── Occasion ticker ── */}
+      <div className="overflow-hidden py-2">
+        <div className="marquee overflow-hidden bg-gradient-to-r from-coral to-coral-deep text-white py-4 -rotate-1 -mx-4">
+          <div className="marquee-track" style={{ "--marquee-duration": "30s" } as React.CSSProperties}>
+            {[...occasions, ...occasions].map((o, i) => (
+              <span
+                key={i}
+                aria-hidden={i >= occasions.length || undefined}
+                className="flex items-center gap-10 pr-10 font-display font-extrabold uppercase text-lg sm:text-xl tracking-tight whitespace-nowrap"
+              >
+                {o} <Sparkles size={16} className="opacity-70" />
+              </span>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* ── Brand Story ── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-20 md:pt-28">
+        <div className="relative rounded-[2rem] overflow-hidden bg-teal-night">
+          <div className="relative w-full aspect-[16/10] md:aspect-[32/11]">
+            <Image
+              src={BRAND_STORY.image}
+              alt={BRAND_STORY.title}
+              fill
+              className="object-cover"
+              sizes="(max-width: 1280px) 100vw, 1280px"
+            />
+            <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-black/90 via-black/65 to-black/0" />
+          </div>
+          <div className="md:absolute md:inset-0 flex items-center">
+            <div className="p-6 sm:p-8 md:p-14 max-w-xl">
+              <span className="eyebrow !text-coral mb-3">{BRAND_STORY.eyebrow}</span>
+              <h2 className="headline !text-white text-3xl md:text-5xl mb-4">{BRAND_STORY.title}</h2>
+              <p className="text-white/75 leading-relaxed">{BRAND_STORY.body}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Features (bento) ── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-20 md:py-28">
+        <SectionHeading
+          eyebrow="Why the Take"
+          title="Why You'll Love It"
+          sub="Designed around one job: making every shot go down smooth."
+        />
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 md:gap-5">
+          <div className="md:col-span-3 md:row-span-2 rounded-[2rem] bg-white border border-ink/5 overflow-hidden flex flex-col">
+            <div className="p-6 md:p-8">
+              <FeatureIcon icon={features[0].icon} />
+              <h3 className="font-display font-extrabold text-2xl md:text-3xl uppercase tracking-tight mt-4 mb-2">
+                {features[0].title}
+              </h3>
+              <p className="text-ink/65 leading-relaxed max-w-md">{features[0].body}</p>
+            </div>
+            <div className="relative flex-1 min-h-[220px] md:min-h-[260px]">
+              <Image
+                src={productDetails.diagram}
+                alt="Diagram of the Take's features"
+                fill
+                className="object-contain px-4 pb-4"
+                sizes="(max-width: 768px) 100vw, 60vw"
+              />
+            </div>
+          </div>
+          {features.slice(1).map((f, i) => (
+            <div
+              key={f.title}
+              className={`rounded-[2rem] p-6 md:p-7 flex flex-col gap-4 ${
+                i === 0 ? "bg-ink text-white" : "bg-white border border-ink/5"
+              } ${i === 2 ? "md:col-span-5 md:flex-row md:items-center md:gap-6" : "md:col-span-2"}`}
+            >
+              <FeatureIcon icon={f.icon} />
+              <div>
+                <h3 className="font-display font-extrabold text-xl uppercase tracking-tight mb-1.5">{f.title}</h3>
+                <p className={`text-sm leading-relaxed ${i === 0 ? "text-white/70" : "text-ink/65"}`}>{f.body}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* ── Brand Carousel ── */}
       <BrandCarousel slides={lifestyle} />
 
-      {/* ── Product Description ── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12 md:py-16">
-        <h2 className="headline text-center mb-3 text-2xl md:text-4xl">Inside the Take</h2>
-        <p className="text-center text-[#1A1A1A]/70 text-base md:text-lg mb-8 md:mb-12 max-w-xl mx-auto">
-          Simple to fill, impossible to spill. Here&apos;s exactly what makes it work.
-        </p>
-
-        <div className="grid md:grid-cols-2 gap-8 items-center mb-10 md:mb-16">
-          <div className="card p-4">
-            <div className="relative aspect-[970/600] rounded-xl overflow-hidden bg-white">
-              <Image
-                src={productDetails.diagram}
-                alt="Diagram of the Take's features"
-                fill
-                className="object-contain"
-                sizes="(max-width: 768px) 100vw, 50vw"
-              />
-            </div>
-          </div>
-          <ul className="flex flex-col gap-4">
-            {productDetails.specs.map((spec) => (
-              <li key={spec} className="flex items-start gap-3">
-                <span
-                  className="mt-1 w-2 h-2 rounded-full shrink-0"
-                  style={{ background: "linear-gradient(135deg, #FF6B35, #FF4500)" }}
-                />
-                <span className="text-[#1A1A1A]/75 leading-relaxed">{spec}</span>
+      {/* ── How It Works ── */}
+      <section id="how-it-works" className="max-w-7xl mx-auto px-4 sm:px-6 py-20 md:py-28">
+        <SectionHeading
+          eyebrow="Easy as 1-2-3"
+          title="How It Works"
+          sub="Three steps between you and the smoothest shot you've ever taken."
+        />
+        <div className="relative">
+          <div
+            aria-hidden
+            className="hidden md:block absolute top-16 left-[17%] right-[17%] border-t-2 border-dashed border-coral/40"
+          />
+          <ol className="relative grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+            {steps.map((s) => (
+              <li
+                key={s.step}
+                className="rounded-[2rem] bg-white border border-ink/5 p-6 md:p-8 flex md:flex-col items-start md:items-center md:text-center gap-5"
+              >
+                <span className="shrink-0 w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-coral to-coral-deep text-white font-display font-extrabold text-xl md:text-2xl flex items-center justify-center shadow-[0_10px_24px_-10px_rgba(255,69,0,0.7)]">
+                  {s.step}
+                </span>
+                <div>
+                  <h3 className="font-display font-extrabold text-xl uppercase tracking-tight mb-1.5">{s.title}</h3>
+                  <p className="text-sm text-ink/65 leading-relaxed">{s.body}</p>
+                </div>
               </li>
             ))}
-          </ul>
-        </div>
-
-        <div className="relative aspect-[970/600] sm:aspect-[970/400] rounded-3xl overflow-hidden">
-          <Image
-            src={productDetails.caseImage}
-            alt="TakeShots waterproof carrying case"
-            fill
-            className="object-cover"
-            sizes="100vw"
-          />
+          </ol>
         </div>
       </section>
 
-      {/* ── How It Works ── */}
-      <section id="how-it-works" className="max-w-7xl mx-auto px-4 sm:px-6 py-12 md:py-16">
-        <h2 className="headline text-center mb-3 text-2xl md:text-4xl">How It Works</h2>
-        <p className="text-center text-[#1A1A1A]/70 text-base md:text-lg mb-8 md:mb-12 max-w-xl mx-auto">
-          Three steps between you and the smoothest shot you&apos;ve ever taken.
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
-          {steps.map((s) => (
-            <div key={s.step} className="text-center">
-              <span className="block text-5xl font-black text-[#FF6B35]/25 mb-3">{s.step}</span>
-              <h3 className="font-black text-lg uppercase mb-2">{s.title}</h3>
-              <p className="text-sm text-[#1A1A1A]/65 leading-relaxed max-w-xs mx-auto">{s.body}</p>
-            </div>
-          ))}
+      {/* ── Inside the Take ── */}
+      <section className="bg-cream-dark">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-20 md:py-28 grid md:grid-cols-2 gap-10 lg:gap-16 items-center">
+          <div className="relative aspect-[970/600] rounded-[2rem] overflow-hidden order-2 md:order-1">
+            <Image
+              src={productDetails.caseImage}
+              alt="TakeShots waterproof carrying case"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 50vw"
+            />
+          </div>
+          <div className="order-1 md:order-2">
+            <span className="eyebrow mb-3">The Details</span>
+            <h2 className="headline text-[2rem] md:text-5xl mb-4">Inside the Take</h2>
+            <p className="text-ink/65 text-base md:text-lg mb-8">
+              Simple to fill, impossible to spill. Here&apos;s exactly what makes it work.
+            </p>
+            <ul className="grid gap-3">
+              {productDetails.specs.map((spec) => (
+                <li key={spec} className="flex items-start gap-3 bg-white rounded-2xl px-4 py-3.5 border border-ink/5">
+                  <span className="mt-0.5 w-6 h-6 rounded-full bg-gradient-to-br from-coral to-coral-deep text-white flex items-center justify-center shrink-0">
+                    <Check size={14} strokeWidth={3} />
+                  </span>
+                  <span className="text-ink/80 font-medium leading-relaxed">{spec}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </section>
 
       {/* ── Reviews ── */}
-      <section className="bg-[#EDEBE5] py-12 md:py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <h2 className="headline text-center mb-3 text-2xl md:text-4xl">What People Are Saying</h2>
-          <p className="text-center text-[#1A1A1A]/70 text-base md:text-lg mb-8 md:mb-12">
-            {PRODUCT.rating} · {PRODUCT.reviewCount}+ ratings on Amazon
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {reviews.map((r) => (
-              <div key={r.title} className="card p-6 flex flex-col gap-3">
-                <div className="flex items-center gap-1 text-[#FF6B35]">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} size={14} fill={i < r.stars ? "currentColor" : "none"} />
-                  ))}
-                </div>
-                <h3 className="font-black text-base leading-snug">{r.title}</h3>
-                <p className="text-sm text-[#1A1A1A]/70 leading-relaxed flex-1">{r.body}</p>
-                <div className="text-xs text-[#1A1A1A]/50 font-medium pt-2 border-t border-[#EDEBE5]">
-                  {r.author} · {r.date}
-                </div>
+      <section id="reviews" className="py-20 md:py-28 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10 md:mb-14">
+          <div>
+            <span className="eyebrow mb-3">Reviews</span>
+            <h2 className="headline text-[2rem] md:text-5xl">What People Are Saying</h2>
+          </div>
+          <div className="flex items-center gap-4 bg-white rounded-3xl border border-ink/5 px-5 py-4 self-start md:self-auto">
+            <p className="font-display text-5xl font-extrabold leading-none">{PRODUCT.rating}</p>
+            <div>
+              <Stars rating={PRODUCT.rating} size={16} />
+              <p className="text-sm text-ink/55 mt-1">{PRODUCT.reviewCount}+ ratings on Amazon</p>
+            </div>
+          </div>
+        </div>
+        <ReviewMarquee reviews={reviews} />
+      </section>
+
+      {/* ── FAQ ── */}
+      <section id="faq" className="max-w-3xl mx-auto px-4 sm:px-6 pb-20 md:pb-28">
+        <SectionHeading eyebrow="FAQ" title="Questions? Answered." />
+        <div className="grid gap-3">
+          {faqs.map((f) => (
+            <details
+              key={f.q}
+              className="group bg-white rounded-2xl border border-ink/5 open:shadow-[0_8px_30px_-12px_rgba(0,0,0,0.12)] transition-shadow"
+            >
+              <summary className="flex items-center justify-between gap-4 cursor-pointer px-5 py-4 md:px-6 md:py-5 font-bold text-base md:text-lg">
+                {f.q}
+                <span className="faq-icon shrink-0 w-8 h-8 rounded-full bg-cream flex items-center justify-center transition-transform group-open:bg-coral group-open:text-white">
+                  <Plus size={16} />
+                </span>
+              </summary>
+              <p className="px-5 pb-5 md:px-6 md:pb-6 -mt-1 text-ink/65 leading-relaxed">{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Final CTA ── */}
+      <section id="notify" className="px-4 sm:px-6 pb-20 md:pb-28">
+        <div className="relative max-w-7xl mx-auto rounded-[2rem] overflow-hidden bg-gradient-to-br from-coral to-coral-deep">
+          <div aria-hidden className="absolute -right-24 -bottom-24 w-96 h-96 rounded-full bg-white/10 blur-2xl" />
+          <div className="relative grid md:grid-cols-[1.2fr_1fr] items-stretch">
+            <div className="p-7 sm:p-10 md:p-14 text-white">
+              <h2 className="headline !text-white text-4xl md:text-6xl mb-4">Get Your Take V2</h2>
+              <p className="text-white/85 text-base md:text-lg mb-7 max-w-md">
+                {`$${PRODUCT.price.toFixed(2)} · `}Ships to the US &amp; Canada. Checkout is quick, secure, and powered by
+                Stripe.
+              </p>
+              <HomeBuyButton
+                onDark
+                name={PRODUCT.name}
+                price={PRODUCT.price}
+                photoUrl={PRODUCT.images[0]}
+                className="btn-primary text-base !bg-none !bg-white !text-coral-deep disabled:opacity-70 disabled:cursor-not-allowed"
+              />
+              <div className="mt-8 pt-7 border-t border-white/20">
+                <p className="text-white/85 text-sm font-semibold mb-3">Not ready yet? Get launch updates &amp; deals:</p>
+                <EmailCapture source="hero" dark />
               </div>
-            ))}
+            </div>
+            <div className="relative hidden md:block min-h-[420px]">
+              <Image
+                src={lifestyle[0].image}
+                alt="The Take V2 on game day"
+                fill
+                className="object-cover"
+                sizes="40vw"
+              />
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── Notify / Email Capture ── */}
-      <section id="notify" className="py-12 md:py-16" style={{ background: "linear-gradient(135deg, #FF6B35, #FF4500)" }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="headline text-white mb-3">Get Your Take V2</h2>
-          <p className="text-white/80 text-base md:text-lg mb-6 md:mb-8">
-            ${PRODUCT.price.toFixed(2)} · Ships to the US &amp; Canada. Checkout is quick, secure, and powered by Stripe.
-          </p>
-          <div className="flex justify-center mb-8">
-            <HomeBuyButton
-              name={PRODUCT.name}
-              price={PRODUCT.price}
-              photoUrl={PRODUCT.images[0]}
-              className="btn-primary text-base bg-white !text-[#FF4500] flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-            />
-          </div>
-          <p className="text-white/70 text-sm mb-3">Or drop your email for launch updates &amp; deals:</p>
-          <div className="flex justify-center">
-            <EmailCapture source="hero" dark />
-          </div>
-        </div>
-      </section>
+      <StickyBuyBar
+        name={PRODUCT.name}
+        price={PRODUCT.price}
+        photoUrl={PRODUCT.images[0]}
+        startId="buy"
+        endId="notify"
+      />
     </>
   );
 }

@@ -8,20 +8,27 @@ export default function DiscountModal() {
 
   useEffect(() => {
     const handler = () => setOpen(true);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     window.addEventListener("open-discount-popup", handler);
-    return () => window.removeEventListener("open-discount-popup", handler);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("open-discount-popup", handler);
+      window.removeEventListener("keydown", onKey);
+    };
   }, []);
 
   if (!open) return null;
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4"
       style={{ background: "rgba(0,0,0,0.55)" }}
       onClick={() => setOpen(false)}
     >
       <div
-        className="relative w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        className="relative w-full max-w-md rounded-t-3xl sm:rounded-3xl bg-white p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-8 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -34,7 +41,7 @@ export default function DiscountModal() {
 
         <div className="mb-6 text-center">
           <span className="text-4xl">🎁</span>
-          <h2 className="font-black text-2xl mt-3 mb-1">Get 20% Off</h2>
+          <h2 className="headline text-3xl mt-3 mb-2">Get 20% Off</h2>
           <p className="text-[#1A1A1A]/60 text-sm">
             Drop your email and we&apos;ll send your discount code instantly. No spam, ever.
           </p>

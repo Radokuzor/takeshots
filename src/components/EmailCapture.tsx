@@ -38,13 +38,17 @@ export default function EmailCapture({ source, dark = false }: Props) {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="your@email.com"
-        className={`flex-1 px-4 py-3 rounded-pill border text-sm outline-none focus:ring-2 focus:ring-[#FF6B35] ${
+        className={`flex-1 min-w-0 min-h-12 px-5 py-3 rounded-pill border text-base sm:text-sm outline-none focus:ring-2 focus:ring-[#FF6B35] ${
           dark
             ? "bg-white/20 border-white/30 text-white placeholder:text-white/60"
             : "bg-white border-[#EDEBE5] text-[#1A1A1A] placeholder:text-[#1A1A1A]/40"
         }`}
       />
-      <button type="submit" disabled={status === "loading"} className="btn-primary">
+      <button
+        type="submit"
+        disabled={status === "loading"}
+        className={dark ? "btn-primary !bg-none !bg-ink !shadow-none" : "btn-primary"}
+      >
         {status === "loading" ? "..." : "Claim My Discount"}
       </button>
       {status === "error" && (

@@ -5,6 +5,15 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import DiscountModal from "@/components/DiscountModal";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
+import { Inter, Bricolage_Grotesque } from "next/font/google";
+
+const body = Inter({ subsets: ["latin"], variable: "--font-body", display: "swap" });
+const display = Bricolage_Grotesque({
+  subsets: ["latin"],
+  weight: ["700", "800"],
+  variable: "--font-display-face",
+  display: "swap",
+});
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://takeshots.com";
 
@@ -57,8 +66,8 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider>
-      <html lang="en">
-        <body className="bg-[#F5F4F0] text-[#1A1A1A] antialiased">
+      <html lang="en" className={`${body.variable} ${display.variable}`}>
+        <body className="bg-cream text-ink font-sans antialiased">
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
