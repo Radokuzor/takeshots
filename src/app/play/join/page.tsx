@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { joinGame } from "@/lib/playGame";
 
-export default function JoinGamePage() {
+function JoinGameForm() {
   const router = useRouter();
-  const [code, setCode] = useState("");
+  const searchParams = useSearchParams();
+  const [code, setCode] = useState(
+    (searchParams.get("code") ?? "").toUpperCase()
+  );
   const [name, setName] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "not_found" | "error">("idle");
 
@@ -72,5 +75,13 @@ export default function JoinGamePage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function JoinGamePage() {
+  return (
+    <Suspense fallback={null}>
+      <JoinGameForm />
+    </Suspense>
   );
 }

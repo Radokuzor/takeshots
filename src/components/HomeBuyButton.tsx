@@ -24,15 +24,6 @@ export default function HomeBuyButton({ name, price, photoUrl, className }: Prop
       description: null,
       price,
       photo_url: photoUrl ?? null,
-      photo_urls: null,
-      occasion_tag: null,
-      occasion_tags: null,
-      amazon_asin: null,
-      pros: null,
-      cons: null,
-      key_points: null,
-      reviews: null,
-      featured: false,
       created_at: new Date().toISOString(),
     };
     setBuyNowItem({ product, quantity });

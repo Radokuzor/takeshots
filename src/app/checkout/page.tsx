@@ -79,11 +79,10 @@ function OrderSummaryItems({ items }: { items: CartItem[] }) {
 }
 
 export default function CheckoutPage() {
-  const { items, buyNowItem } = useCart();
+  const { buyNowItem } = useCart();
   const router = useRouter();
-  const checkoutItems = buyNowItem ? [buyNowItem] : items;
+  const checkoutItems = buyNowItem ? [buyNowItem] : [];
   const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [hydrated, setHydrated] = useState(false);
 
   const total = checkoutItems.reduce(
     (sum, i) => sum + i.product.price * i.quantity,
@@ -91,17 +90,8 @@ export default function CheckoutPage() {
   );
 
   useEffect(() => {
-    if (useCart.persist.hasHydrated()) {
-      setHydrated(true);
-      return;
-    }
-    return useCart.persist.onFinishHydration(() => setHydrated(true));
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated) return;
     if (checkoutItems.length === 0) {
-      router.replace("/shop");
+      router.replace("/");
       return;
     }
     fetch("/api/checkout", {
@@ -112,9 +102,9 @@ export default function CheckoutPage() {
       .then((res) => res.json())
       .then((data) => setClientSecret(data.clientSecret));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated]);
+  }, []);
 
-  if (!hydrated || checkoutItems.length === 0) return null;
+  if (checkoutItems.length === 0) return null;
 
   return (
     <div className="min-h-screen bg-[#F5F4F0] py-6 md:py-10 px-4">

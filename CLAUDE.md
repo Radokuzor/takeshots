@@ -1,19 +1,17 @@
 # TakeShots — AI Onboarding Guide
 
-TakeShots is a gift/product directory: occasion-based gift guides (bachelorette, wedding, birthday, etc.) with a Stripe-powered shop, AI-generated blog/city content, a realtime party game, and an admin panel where products and articles are created largely via Claude.
+TakeShots is a single-product DTC landing page for the **Take V2**, a patented shot holder & straw ($19.99). The site also hosts **Most Likely To**, a free realtime party game, and a one-page **About Us**. That's the whole public site — home, play, about, plus the checkout flow and a private admin order-fulfillment view. There is no multi-product shop, no gift guides, no blog, and no "near me" bar guides — those existed earlier in the project's life and were deliberately removed (see "Removed in the pivot" below). Don't resurrect them without being asked.
 
-Read this before making changes — it covers the stack, where things live, the data model, and known gaps/inconsistencies you need to work around rather than "fix" by guessing.
+Read this before making changes — it covers the stack, where things live, the data model, and known gaps you need to work around rather than "fix" by guessing.
 
 ## Stack
 
 - **Next.js 16** (App Router), React 19, TypeScript
-- **Supabase** (Postgres) — no ORM, raw `supabase-js` calls. `src/lib/supabase.ts` exports `supabase` (anon key, client-safe) and `supabaseAdmin()` (service role, server-only). This is the primary datastore: products, articles (blog/near-me), email_subscribers, orders.
-- **Firebase (Firestore)** — a second, separate datastore used only for things that don't fit Supabase's request/response model: the realtime `/play` party game, and the `shot_content` collection (AI-generated blog guides/recipes about shots — displayed inline on `/blog` alongside Supabase articles, not a separate section). `src/lib/firebase.ts` exports the client SDK `db`, used everywhere (client components, server components, and API routes alike) — `firestore.rules` are open (`allow read, write: if true`) since there's no auth system; admin writes are gated only by the `admin_auth` cookie check inside `/api/admin/*` routes, same pattern as Supabase. See "Firebase-backed features" below.
-- **Stripe** — Checkout Sessions only (no webhook handler — see Gaps below)
-- **Clerk** — installed and wraps the app (`ClerkProvider` in `src/app/layout.tsx`) but **not used for anything**. No middleware, no protected routes, no sign-in UI. Don't assume Clerk auth exists anywhere.
-- **Anthropic SDK** (`claude-sonnet-4-6`) — powers the admin panel's product-copy generation and article writing
-- **ScraperAPI** — server-side Amazon page scraping (product details + reviews) via raw `fetch` + regex, no scraping library
-- **Zustand** — cart store (`src/lib/cart.ts`), persisted to `localStorage` as `takeshots-cart`
+- **Supabase** (Postgres) — no ORM, raw `supabase-js` calls. `src/lib/supabase.ts` exports `supabase` (anon key, client-safe) and `supabaseAdmin()` (service role, server-only). Used for the `products` table (legacy — see Data Model), `email_subscribers`, and `orders`.
+- **Firebase (Firestore)** — used only for the realtime `/play` party game now. `src/lib/firebase.ts` exports the client SDK `db`, used client- and server-side alike. `firestore.rules` are open (`allow read, write: if true`) since there's no auth system.
+- **Stripe** — Checkout is built directly with `@stripe/react-stripe-js` Elements (PaymentIntent-based, not Stripe Checkout Sessions) on `/checkout`. A webhook handler at `src/app/api/webhooks/stripe/route.ts` listens for `payment_intent.succeeded`, writes a row to `orders`, and pings Telegram (`TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID`) with the order summary.
+- **Clerk** — installed and wraps the app (`ClerkProvider` in `src/app/layout.tsx`) but **not used for anything**. No middleware, no protected routes, no sign-in UI. Treat it as dead code unless you're the one implementing real user auth.
+- **Zustand** — `src/lib/cart.ts` holds only `buyNowItem` (a single `{product, quantity}`), set by the homepage's "Buy Now" button right before navigating to `/checkout`. There is no multi-item cart or cart drawer anymore — one product, one purchase flow.
 - **Tailwind CSS v4** — imported via `@import "tailwindcss"` in `globals.css`; `tailwind.config.ts` still carries v3-style `theme.extend` (colors/radius) alongside it. Both are in effect.
 - No component library (no shadcn/Radix) — everything is hand-built Tailwind + a few shared classes in `globals.css`.
 - No tests, no CI config.
@@ -22,89 +20,90 @@ Read this before making changes — it covers the stack, where things live, the 
 
 ```
 src/app/
-  layout.tsx            RootLayout: ClerkProvider, Navbar, CartDrawer, DiscountModal, Footer
-  page.tsx               Homepage
-  shop/                  Shop grid (client-side occasion filter, fetches ALL products, no pagination)
-  shop/[id]/              Product detail page
-  gifts/[occasion]/       Statically generated (generateStaticParams) per-occasion gift guides
-  near-me/[city]/          City gift-guide pages — renders an `articles` row of category "near_me"
-  blog/                    Blog index — merges Supabase `articles` (category "blog") AND Firestore `shot_content`, sorted by date into one list
-  blog/[slug]/             Blog post — looks up the slug in Supabase `articles` first, falls back to Firestore `shot_content` (renders differently: markdown article vs. recipe ingredients/instructions)
+  layout.tsx            RootLayout: ClerkProvider, Navbar, DiscountModal, Footer, Organization/WebSite JSON-LD
+  page.tsx               Homepage — the entire product pitch for the Take V2 (hero, brand story, features, how-it-works, reviews, email capture). Product JSON-LD lives here too.
+  about/                  About Us — static page, explicitly says "we're not a gift shop and we're not a game" (the game is a separate offering, not the product)
   play/                   "Most Likely To" party game (Firestore-backed, realtime) — see Firebase-backed features below
-  play/create, play/join, play/[code]/  Host/join flow + the game itself (lobby → voting → reveal → ended)
-  admin/                  Admin dashboard (products + articles CRUD, AI tools) — gated by a cookie, not Clerk
+  play/create, play/join, play/[code]/  Host/join flow + the game itself (lobby → voting → reveal → ended). These three are noindex (own layout.tsx each) since they're ephemeral/personalized, not content pages.
+  checkout/               Stripe Elements checkout for whatever's in `buyNowItem`. noindex (layout.tsx). Redirects to `/` if there's nothing to check out.
+  checkout/return/         Post-payment confirmation page (polls `/api/checkout/session-status`)
+  admin/                  Order fulfillment dashboard only (`OrdersClient.tsx`) — gated by a cookie, not Clerk. noindex (layout.tsx).
   admin/login/             Password form → POST /api/admin/auth
-  api/checkout/            Creates Stripe Checkout Session
-  api/subscribe/           Upserts into email_subscribers
-  api/products/[id]/enrich/  Lazy Amazon-review fetch + cache
-  api/admin/*               All require the admin_auth cookie (see Auth below)
-  api/admin/shot-content/    POST generates+saves, DELETE removes a shot_content doc (Firestore, via client SDK) — the generator UI lives inside the admin Articles tab
+  privacy/, terms/         Static legal pages
+  api/checkout/            Creates a Stripe PaymentIntent from the current buy-now item
+  api/checkout/session-status/  Polled by /checkout/return to confirm payment succeeded
+  api/subscribe/           Upserts into email_subscribers (discount popup / footer capture)
+  api/admin/auth/            Sets the admin_auth cookie
+  api/admin/orders/          Reads orders for the admin dashboard
+  api/webhooks/stripe/       Verifies signature, writes `orders` row, pings Telegram
+  api/analytics/session-end/ AnalyticsTracker beacon endpoint
+  sitemap.ts, robots.ts      Static — just `/`, `/play`, `/about`, `/privacy`, `/terms`. No dynamic content to enumerate anymore.
+  icon.tsx, apple-icon.tsx   Dynamically generated favicons (next/og)
 
-src/components/           Navbar, Footer, CartDrawer, ProductCard, ProductEmbed,
-                           HeroCarousel, ArticlePage (shared blog/near-me renderer),
-                           DiscountModal, GetDiscountButton, EmailCapture
+src/components/           Navbar, Footer, DiscountModal, GetDiscountButton, EmailCapture,
+                           ProductGallery, BrandCarousel, HomeBuyButton, AnalyticsTracker
 
 src/lib/
   supabase.ts            supabase (anon) + supabaseAdmin() (service role) clients
-  firebase.ts            Client Firestore instance (db) — used by /play and the blog's shot_content fallback, client/server/API routes alike
+  firebase.ts            Client Firestore instance (db) — used only by /play now
   playGame.ts             /play game actions (createGame, castVote, etc.) + realtime hooks (useGame, usePlayers, useVotes, useRound)
   playerId.ts, gameCode.ts, prompts.ts   /play support (localStorage player id, game code gen, prompt bank)
-  shotContent.ts          ShotContent type + toSlug() shared by /blog's Firestore fallback and the admin generator
   stripe.ts              Server Stripe client
-  cart.ts                Zustand cart store
-  types.ts               Product, Article, EmailSubscriber, CartItem, Database types (Supabase-side only)
+  cart.ts                Zustand store holding just `buyNowItem` — no multi-item cart
+  telegram.ts             Order-notification helper used by the webhook
+  types.ts                Product (trimmed — id/name/description/price/photo_url/created_at), EmailSubscriber, CartItem, OrderItem, ShippingAddress, Order, Database types
 
-supabase/schema.sql       Source of truth for the Postgres schema + RLS policies
+supabase/schema.sql       Postgres schema. Still defines `products` and `articles` tables from the pre-pivot gift-directory era — see Data Model.
 firestore.rules            Source of truth for Firestore rules — deploy via `firebase deploy --only firestore:rules`; nothing does this automatically
 ```
+
+## Removed in the pivot
+
+The site used to be a general gift-directory (bachelorette/wedding/birthday gift guides, a multi-product shop, city bar guides, an AI-written blog) with an admin panel for generating that content. All of that was deliberately removed because the product is just the Take V2 + the game + an about page. Specifically deleted:
+
+- Routes: `/shop`, `/shop/[id]`, `/gifts/[occasion]`, `/near-me`, `/near-me/[city]`, `/blog`, `/blog/[slug]`
+- Components: `ProductCard`, `ProductEmbed`, `ArticlePage`, `HeroCarousel`, `CartDrawer`
+- Admin tooling: the Amazon-scrape → Claude product-copy pipeline (`/api/admin/amazon-scrape`), the article generator (`/api/admin/generate-article`), the shot-content generator (`/api/admin/shot-content`), and their supporting upload/delete routes — the admin dashboard is now purely order fulfillment.
+- Libs: `src/lib/blog.ts` (local-markdown blog reader), `src/lib/shotContent.ts`, `src/content/blog/*.md`
+- The `@anthropic-ai/sdk` and `react-markdown` npm dependencies (nothing left that used them)
+- The Firestore `shot_content` collection's rules block (the collection itself was never deleted server-side — see Known Gaps)
+- The homepage's Supabase-backed "More Gifts You'll Love" cross-sell section
+
+**If you're asked to touch anything gift/shop/blog-shaped again, confirm scope first** — it may mean resurrecting a deleted feature, which is a bigger decision than it looks (data model, nav, admin tooling, SEO surface all move together), not a small patch.
 
 ## Auth — Read This Before Touching Anything Admin-Related
 
 There are two unrelated systems in the codebase; only one is real:
 
 - **Clerk**: scaffolded (`ClerkProvider`, env vars present) but wired to nothing. No middleware.ts, no route protection, no `auth()`/`currentUser()` calls anywhere. Treat it as dead code unless you're the one implementing real user auth.
-- **Admin auth (what's actually used)**: a single shared password in `ADMIN_PASSWORD`. `POST /api/admin/auth` checks it and sets an httpOnly `admin_auth=1` cookie (8h). Every `/api/admin/*` route manually checks `cookies().get("admin_auth")?.value === "1"`. `/admin/page.tsx` redirects server-side to `/admin/login` if the cookie is missing. No CSRF protection, no per-user identity, no rate limiting.
+- **Admin auth (what's actually used)**: a single shared password in `ADMIN_PASSWORD`. `POST /api/admin/auth` checks it and sets an httpOnly `admin_auth=1` cookie (8h). `/api/admin/orders` manually checks `cookies().get("admin_auth")?.value === "1"`. `/admin/page.tsx` redirects server-side to `/admin/login` if the cookie is missing. No CSRF protection, no per-user identity, no rate limiting.
 
 If you're asked to add user accounts, gate a customer-facing feature, or add roles — that's new work, not "connecting the existing Clerk setup," since nothing today assumes Clerk exists.
 
 ## Data Model (`supabase/schema.sql`)
 
-- **products** — `name`, `description`, `price`, `photo_url` + `photo_urls[]`, `amazon_asin`, `pros/cons/key_points[]`, `reviews jsonb` (`{stars, title, body}[]`), `featured`. Two occasion fields coexist:
-  - `occasion_tag` (single, legacy, check-constrained to 7 values) — still what `/gifts/[occasion]` filters on
-  - `occasion_tags[]` (newer, multi-tag) — what `/shop` filters on
-  - Every write path (admin product create/update) keeps `occasion_tag = occasion_tags[0]` in sync. **If you add a new write path for products, you must sync both fields or `/gifts/[occasion]` will silently drop products.**
-- **articles** — `title`, `slug` (unique), `category` (`near_me` | `blog`), `city` (near_me only), `body` (Markdown with `{{product:<uuid>}}` embed placeholders — `ArticlePage.tsx` regex-splits on these and interleaves `ProductEmbed` components), `tags[]`, `related_slugs[]`.
+- **products** — still defined in the schema from the pre-pivot gift-directory era (`occasion_tag`/`occasion_tags`, `pros`/`cons`/`key_points`, `reviews`, etc.), but **nothing in the app reads or writes this table anymore**. The one product the site sells (the Take V2) is a hardcoded object in `src/app/page.tsx`, not a Supabase row — `HomeBuyButton` builds a synthetic `Product` (`id: "promo-<name>"`) in-memory for the cart/checkout flow. The `Product` type in `src/lib/types.ts` was trimmed to match (`id`, `name`, `description`, `price`, `photo_url`, `created_at`) — it no longer mirrors the full `products` table shape. This table and its Storage bucket (`product-images`) are orphaned data, not deleted — see Known Gaps.
+- **articles** — also still in the schema (near-me/blog content), also completely unused by any route now. Orphaned, not deleted — see Known Gaps.
 - **email_subscribers** — `email` (unique), `source` (`hero`|`popup`|`footer`|`play_page`), `discount_claimed` (boolean field exists but **nothing ever sets it true** — no discount code system is implemented despite the funnel UI implying one).
-- **orders** — exists in schema, has a `status` enum, but **no code path ever writes to it**. See Gaps below.
-- **game_sessions** — placeholder for the future `/play` feature; schema comment notes "Firebase will own this later." Not used yet.
+- **orders** — the only actively-used data table besides email_subscribers. Written by the Stripe webhook (`payment_intent.succeeded`), read by the admin dashboard. `items` is a jsonb array of `{product_id, name, price, quantity}` built from Stripe PaymentIntent metadata at checkout time, not a foreign key into `products`.
+- **game_sessions** — placeholder, still unused; Firestore owns `/play` state, not this table.
 
-RLS: public SELECT on `products`/`articles`, public INSERT on `email_subscribers`. `orders`/`game_sessions` have RLS on with no public policies (service-role only).
-
-## The AI Content Pipelines (core of the admin panel)
-
-1. **Product enrichment** (`POST /api/admin/amazon-scrape`): admin pastes an Amazon URL → ScraperAPI fetches the product + review pages → regex extracts title/price/bullets/images/reviews → Claude turns that into structured product JSON (name, description, key_points, pros, cons) grounded in the real scraped copy → admin reviews and saves via `/api/admin/products`. Images get re-uploaded into Supabase Storage bucket `product-images`, falling back to the original Amazon CDN URL if upload fails.
-2. **Article generation** (`POST /api/admin/generate-article`): admin picks products + a prompt → Claude writes a full Markdown article, embedding `{{product:<uuid>}}` placeholders where relevant → saved to `articles`.
-3. **Review backfill** (`GET /api/products/[id]/enrich`): if a product has an `amazon_asin` but no cached `reviews`, this lazily scrapes and caches them on first product-page view.
-
-If you're asked to change how products or articles are generated, these three routes are the whole system — there's no separate ingestion pipeline elsewhere.
+RLS: public SELECT on `products`/`articles` (both now moot since nothing queries them), public INSERT on `email_subscribers`. `orders`/`game_sessions` have RLS on with no public policies (service-role only).
 
 ## Firebase-backed Features
 
-Two things intentionally live in Firestore instead of Supabase, because they don't fit the request/response, RLS-gated model the rest of the site uses:
+Firestore is used for exactly one thing now:
 
-1. **`/play` — "Most Likely To" party game.** Fully realtime (`onSnapshot` listeners), no page reloads: host creates a game (`games/{code}`), players join, vote each round (`games/{code}/rounds/{i}/votes/{playerId}`), scores tally live. No auth — a `localStorage`-persisted UUID (`src/lib/playerId.ts`) is the only identity, and `firestore.rules` are wide open (`allow write: if true`) since there's no auth to check against.
-2. **`shot_content` — AI-generated shot guides/recipes, displayed inline on `/blog`.** There is no separate "shots" section or route — `/blog` (index) merges Supabase `articles` (category `blog`) with Firestore `shot_content` into one sorted list, and `/blog/[slug]` tries Supabase first, then falls back to `shot_content` by slug, rendering a recipe (ingredients/instructions) or a markdown guide depending on `type`. Content is written from the admin panel's **Articles** tab (`POST /api/admin/shot-content`, mirrors the Supabase article-generation pattern but targets Firestore). Same open `firestore.rules` as `/play` — the only real gate is the `admin_auth` cookie check inside the API route, exactly like every other `/api/admin/*` route.
+**`/play` — "Most Likely To" party game.** Fully realtime (`onSnapshot` listeners), no page reloads: host creates a game (`games/{code}`), players join, vote each round (`games/{code}/rounds/{i}/votes/{playerId}`), scores tally live. No auth — a `localStorage`-persisted UUID (`src/lib/playerId.ts`) is the only identity, and `firestore.rules` are wide open (`allow write: if true`) since there's no auth to check against.
 
-`firestore.rules` currently has no write restrictions on either collection — this is intentional (matches the "single shared admin password, no real auth" posture of the rest of the site), not an oversight. Don't add a Firebase Admin SDK / service-account layer unless the user explicitly asks for stricter write security. **Don't reintroduce a standalone `/shots` route** — this was tried and explicitly rolled back in favor of folding into `/blog`; if asked to touch this content again, keep it inside the blog routes.
+The `shot_content` collection (an AI-generated blog-guide feature, formerly surfaced on `/blog`) was removed along with the blog. Its Firestore rules block was deleted, but the collection itself may still contain old documents — Firestore doesn't clean up on rule removal, so if you're auditing Firestore data directly, expect to find it and know it's dead.
 
 ## Known Gaps / Inconsistencies (don't "fix" silently — flag or confirm intent first)
 
-- **Stripe webhook handler exists** at `src/app/api/webhooks/stripe/route.ts`, registered in the Stripe Dashboard against `https://takeshots.com/api/webhooks/stripe`. On `checkout.session.completed` it verifies the signature with `STRIPE_WEBHOOK_SECRET`, writes a row to `orders` (cart contents are round-tripped via Checkout Session `metadata.order_items`, set in `api/checkout/route.ts`), and pings Telegram (`TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID`) with the order summary. There's still no success/confirmation page — success/cancel just redirects to `/shop?success=1`/`?cancelled=1` — and cart contents beyond ~500 chars of JSON metadata per Stripe's limit would be dropped, so this isn't safe for very large carts.
-- **Cart isn't cleared after successful checkout** — it's only cleared by explicit user action in the UI.
+- **Orphaned Supabase tables/storage**: `products`, `articles`, and the `product-images` Storage bucket still exist in the database from before the pivot, with no code path reading or writing them anymore. They weren't dropped because that's a data-loss action beyond what removing frontend routes required — dropping them (or archiving/exporting first) needs an explicit decision from whoever owns the Supabase project.
+- **`ANTHROPIC_API_KEY` and `SCRAPERAPI_KEY` are now unused** (their only callers — the amazon-scrape and article-generation routes — were deleted) but are still listed as env vars below and likely still set in `.env.local`. Harmless to leave, safe to remove once you're sure nothing else depends on them.
 - **`discount_claimed` and the discount funnel are cosmetic** — email capture works, but no discount code is ever issued or validated anywhere.
-- **`loadStripe()` is instantiated redundantly** in ~5 components (`ProductCard`, `ProductDetailClient`, `CartDrawer`, `HeroCarousel`, `ProductEmbed`) instead of a shared client module.
-- **No search feature** — `/shop` filtering is occasion-only, client-side, over the entire unpaginated product set.
-- **`/near-me` cities are hardcoded** to Austin/Houston/Dallas in both the index page and homepage, not driven by the `articles` table.
+- **`loadStripe()` instantiation** — check `HeroCarousel`-era duplication concerns no longer apply (that component is deleted); current callers are `checkout/page.tsx` only, so this is no longer a live issue.
 - **`README.md` is empty/placeholder** — this file is the real source of project context.
 - No `.env.example` — if you add a new env var, there's no template file to update, just this doc and `.env.local`.
 
@@ -125,15 +124,14 @@ NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_K
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
 TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 ADMIN_PASSWORD
-SCRAPERAPI_KEY
-ANTHROPIC_API_KEY
+SCRAPERAPI_KEY            — unused now, see Known Gaps
+ANTHROPIC_API_KEY         — unused now, see Known Gaps
 NEXT_PUBLIC_SITE_URL
 NEXT_PUBLIC_FIREBASE_API_KEY, NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN, NEXT_PUBLIC_FIREBASE_PROJECT_ID, NEXT_PUBLIC_FIREBASE_APP_ID
 ```
 
 ## When Adding Features
 
-- **New product fields**: update `supabase/schema.sql`, `src/lib/types.ts`, and both `POST`/`PUT` handlers in `src/app/api/admin/products/route.ts` — nothing here is generated from the schema.
-- **New occasion**: update the check constraint in `supabase/schema.sql`, the occasion list used by `/shop` filtering and `/gifts/[occasion]/generateStaticParams`, and `OCCASION_META` (SEO copy) in the gifts page.
-- **New admin-only route**: copy the `cookies().get("admin_auth")` check from an existing `api/admin/*` route — there's no shared middleware or helper for it yet.
-- **Anything touching money**: remember there's currently no order persistence or webhook — if the task is order-related, you likely need to build that from scratch, not extend something that exists.
+- **New admin-only route**: copy the `cookies().get("admin_auth")` check from `api/admin/orders/route.ts` — there's no shared middleware or helper for it yet.
+- **Anything touching money**: order writes happen only via the Stripe webhook (`payment_intent.succeeded`) — don't add a second write path (e.g. writing an order client-side after checkout) or you'll risk duplicate/inconsistent rows.
+- **Touching the buy flow**: there's one product and one `buyNowItem` in the cart store — resist reintroducing a multi-item cart or product catalog unless that's explicitly the ask.

@@ -2,7 +2,7 @@
 
 import { usePlayers, useVotes, nextPrompt, endGame, type GameDoc } from "@/lib/playGame";
 import { getPlayerId } from "@/lib/playerId";
-import JoinHint from "./JoinHint";
+import JoinQR from "./JoinQR";
 
 export default function Reveal({ game, code }: { game: GameDoc; code: string }) {
   const players = usePlayers(code);
@@ -61,7 +61,7 @@ export default function Reveal({ game, code }: { game: GameDoc; code: string }) 
         )}
 
         <div className="flex flex-col items-center">
-          <JoinHint code={code} />
+          <JoinQR code={code} />
         </div>
       </div>
     </div>

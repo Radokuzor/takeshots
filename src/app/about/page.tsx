@@ -4,6 +4,9 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "About Us",
   description: "TakeShots makes the Take V2, a patented shot holder and straw that turns every shot into a smooth, no spill chaser.",
+  alternates: {
+    canonical: "/about",
+  },
 };
 
 export default function AboutPage() {

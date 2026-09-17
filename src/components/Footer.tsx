@@ -1,10 +1,8 @@
 import Link from "next/link";
+import GetDiscountButton from "@/components/GetDiscountButton";
 
-const shopLinks = [
-  { label: "Shop", href: "/shop" },
+const footerLinks = [
   { label: "Play", href: "/play" },
-  { label: "Near Me", href: "/near-me" },
-  { label: "Blog", href: "/blog" },
   { label: "About Us", href: "/about" },
 ];
 
@@ -34,12 +32,12 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <p className="font-black text-xl uppercase tracking-tight mb-2">TakeShots</p>
-            <p className="text-sm text-[#1A1A1A]/60">Gifts, games, and good times.</p>
+            <p className="text-sm text-[#1A1A1A]/60">The Take V2 — smoother shots, every time.</p>
           </div>
 
           {/* Links */}
           <nav className="flex flex-col gap-3">
-            {shopLinks.map((l) => (
+            {footerLinks.map((l) => (
               <Link
                 key={l.href}
                 href={l.href}
@@ -72,9 +70,9 @@ export default function Footer() {
                 <InstagramIcon />
               </a>
             </div>
-            <Link href="/shop" className="btn-primary text-center text-sm w-fit">
+            <GetDiscountButton className="btn-primary text-center text-sm w-fit">
               Get 20% Off
-            </Link>
+            </GetDiscountButton>
           </div>
         </div>
 

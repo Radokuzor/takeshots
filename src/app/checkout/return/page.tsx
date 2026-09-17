@@ -16,7 +16,7 @@ export default function CheckoutReturnPage() {
 function CheckoutReturnContent() {
   const searchParams = useSearchParams();
   const paymentIntentId = searchParams.get("payment_intent");
-  const { clearCart, setBuyNowItem } = useCart();
+  const { setBuyNowItem } = useCart();
   const [status, setStatus] = useState<"loading" | "complete" | "failed">("loading");
   const [email, setEmail] = useState<string | null>(null);
 
@@ -31,7 +31,6 @@ function CheckoutReturnContent() {
         if (data.status === "succeeded") {
           setStatus("complete");
           setEmail(data.customerEmail);
-          clearCart();
           setBuyNowItem(null);
           try {
             sessionStorage.setItem("ts_purchased", "1");
@@ -64,8 +63,8 @@ function CheckoutReturnContent() {
                 ? `A confirmation has been sent to ${email}.`
                 : "Thanks for your order."}
             </p>
-            <Link href="/shop" className="btn-primary inline-block mt-6">
-              Continue shopping
+            <Link href="/" className="btn-primary inline-block mt-6">
+              Back to home
             </Link>
           </>
         )}
@@ -76,8 +75,8 @@ function CheckoutReturnContent() {
             <p className="mt-2 text-[#1A1A1A]/60 text-sm">
               We couldn&apos;t confirm your order. If you were charged, contact us for support.
             </p>
-            <Link href="/shop" className="btn-primary inline-block mt-6">
-              Back to shop
+            <Link href="/" className="btn-primary inline-block mt-6">
+              Back to home
             </Link>
           </>
         )}

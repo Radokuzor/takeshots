@@ -2,14 +2,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, X, ShoppingCart } from "lucide-react";
-import { useCart } from "@/lib/cart";
+import { Menu, X } from "lucide-react";
 import GetDiscountButton from "@/components/GetDiscountButton";
 
 const links = [
   { label: "Home", href: "/" },
   { label: "Play", href: "/play" },
-  { label: "Blog", href: "/blog" },
   { label: "About Us", href: "/about" },
 ];
 
@@ -21,8 +19,6 @@ function isActiveLink(pathname: string, href: string) {
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-  const { items, setOpen: setCartOpen } = useCart();
-  const itemCount = items.reduce((s, i) => s + i.quantity, 0);
 
   return (
     <header className="sticky top-0 z-50 bg-white backdrop-blur-sm border-b-2 border-[#FF6B35]">
@@ -51,19 +47,6 @@ export default function Navbar() {
 
         {/* Right side */}
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setCartOpen(true)}
-            className="relative p-2 hover:text-[#FF6B35] transition-colors"
-            aria-label="Open cart"
-          >
-            <ShoppingCart size={22} />
-            {itemCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 text-[10px] font-bold bg-[#FF6B35] text-white rounded-full flex items-center justify-center">
-                {itemCount}
-              </span>
-            )}
-          </button>
-
           <GetDiscountButton className="btn-primary hidden sm:inline-flex text-sm py-2 px-5">
             Get 20% Off
           </GetDiscountButton>

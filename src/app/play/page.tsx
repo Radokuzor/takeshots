@@ -4,6 +4,9 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Most Likely To — Play with Friends",
   description: "Fire up a live round of Most Likely To with your group. No app, no sign-in — just a game code.",
+  alternates: {
+    canonical: "/play",
+  },
 };
 
 export default function PlayPage() {

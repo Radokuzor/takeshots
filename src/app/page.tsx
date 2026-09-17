@@ -1,10 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import Image from "next/image";
 import { Star, Zap, ShieldCheck, MapPin, Sparkles } from "lucide-react";
-import { supabase } from "@/lib/supabase";
-import type { Product } from "@/lib/types";
-import ProductCard from "@/components/ProductCard";
 import EmailCapture from "@/components/EmailCapture";
 import ProductGallery from "@/components/ProductGallery";
 import BrandCarousel from "@/components/BrandCarousel";
@@ -14,10 +10,21 @@ export const metadata: Metadata = {
   title: "The Take V2 — Shot Holder & Straw | TakeShots",
   description:
     "Meet the Take V2: a shot holder & straw that turns every shot into a smooth, no-spill chaser. Fits any bottle or glass. Take your next party to the next level.",
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     title: "The Take V2 — Shot Holder & Straw | TakeShots",
     description:
       "A patented shot holder & straw that makes the leap from shot to chaser seamless. No spills, no burn, no fumbling.",
+    images: [
+      {
+        url: "https://m.media-amazon.com/images/I/71193Q2smAL._AC_SL1500_.jpg",
+        width: 1500,
+        height: 1500,
+        alt: "The Take V2 shot holder and straw",
+      },
+    ],
   },
 };
 
@@ -179,20 +186,42 @@ const reviews = [
   },
 ];
 
-async function getMoreGifts(): Promise<Product[]> {
-  const { data } = await supabase
-    .from("products")
-    .select("*")
-    .eq("featured", true)
-    .limit(4);
-  return (data as Product[]) ?? [];
-}
+const productJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Product",
+  name: PRODUCT.name,
+  description: PRODUCT.description,
+  image: PRODUCT.images,
+  brand: { "@type": "Brand", name: "TakeShots" },
+  offers: {
+    "@type": "Offer",
+    url: (process.env.NEXT_PUBLIC_SITE_URL ?? "https://takeshots.com") + "/",
+    priceCurrency: "USD",
+    price: PRODUCT.price.toFixed(2),
+    availability: "https://schema.org/InStock",
+  },
+  aggregateRating: {
+    "@type": "AggregateRating",
+    ratingValue: PRODUCT.rating,
+    reviewCount: PRODUCT.reviewCount,
+  },
+  review: reviews.map((r) => ({
+    "@type": "Review",
+    reviewRating: { "@type": "Rating", ratingValue: r.stars, bestRating: 5 },
+    author: { "@type": "Person", name: r.author },
+    name: r.title,
+    reviewBody: r.body,
+  })),
+};
 
-export default async function HomePage() {
-  const moreGifts = await getMoreGifts();
-
+export default function HomePage() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+      />
+
       {/* ── Hero: The Product ── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10 md:py-20 grid md:grid-cols-2 gap-8 md:gap-12 items-center">
         <ProductGallery images={PRODUCT.images} productName={PRODUCT.name} />
@@ -385,25 +414,6 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* ── More Gifts ── */}
-      {moreGifts.length > 0 && (
-        <section className="bg-[#EDEBE5] py-12 md:py-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <div className="flex items-end justify-between mb-6 md:mb-8">
-              <h2 className="headline text-2xl md:text-4xl">More Gifts You&apos;ll Love</h2>
-              <Link href="/shop" className="text-[#FF6B35] font-bold text-sm uppercase tracking-wide hover:opacity-70 transition-opacity">
-                See All →
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {moreGifts.map((p) => (
-                <ProductCard key={p.id} product={p} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* ── Notify / Email Capture ── */}
       <section id="notify" className="py-12 md:py-16" style={{ background: "linear-gradient(135deg, #FF6B35, #FF4500)" }}>
