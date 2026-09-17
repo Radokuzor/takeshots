@@ -6,7 +6,7 @@ import ProductGallery from "@/components/ProductGallery";
 import BrandCarousel from "@/components/BrandCarousel";
 import HomeBuyButton from "@/components/HomeBuyButton";
 import ReviewMarquee from "@/components/ReviewMarquee";
-import StickyBuyBar from "@/components/StickyBuyBar";
+import { TAKE_V2 } from "@/lib/product";
 
 export const metadata: Metadata = {
   title: "The Take V2 — Shot Holder & Straw | TakeShots",
@@ -31,16 +31,16 @@ export const metadata: Metadata = {
 };
 
 const PRODUCT = {
-  name: "TakeShots Take V2",
+  name: TAKE_V2.name,
   tagline: "Take Shots Like Never Before",
-  price: 19.99,
+  price: TAKE_V2.price,
   rating: 4.2,
   reviewCount: 300,
   color: "Blackout",
   description:
     "The Take V2 is a patented shot holder & straw that makes the leap from shot to chaser completely seamless. Drop the straw into your chaser or mixed drink, take your shot, and let the burn disappear — no fumbling, no spilling, no excuses.",
   images: [
-    "https://m.media-amazon.com/images/I/71193Q2smAL._AC_SL1500_.jpg",
+    TAKE_V2.photoUrl,
     "https://m.media-amazon.com/images/S/aplus-media-library-service-media/8a7b22dc-5965-4441-a4f0-a45ccea13c4a.__CR0,0,970,600_PT0_SX1200_V1___.jpg",
     "https://m.media-amazon.com/images/I/612L6ixcPrL._AC_SL1080_.jpg",
     "https://m.media-amazon.com/images/I/71cUBP7d08L._AC_SL1500_.jpg",
@@ -601,14 +601,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      <StickyBuyBar
-        name={PRODUCT.name}
-        price={PRODUCT.price}
-        photoUrl={PRODUCT.images[0]}
-        startId="buy"
-        endId="notify"
-      />
     </>
   );
 }
