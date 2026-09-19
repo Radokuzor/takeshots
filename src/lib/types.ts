@@ -50,7 +50,7 @@ export interface Order {
 }
 
 export interface AnalyticsSession {
-  id: string;
+  /** Firestore document id === session_id. */
   session_id: string;
   visitor_id: string | null;
   visit_number: number;

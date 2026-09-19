@@ -6,7 +6,6 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   ChevronDown,
-  LogOut,
   Package,
   RefreshCw,
   ShoppingBag,
@@ -584,19 +583,13 @@ export default function AnalyticsClient({
   const rangeLabel = RANGE_OPTIONS.find((r) => r.key === range)?.label ?? "";
   const bucketWord = b.granularity === "hour" ? "hour" : b.granularity === "day" ? "day" : "month";
 
-  async function logout() {
-    await fetch("/api/admin/analytics-auth", { method: "DELETE" });
-    router.push("/admin/analytics/login");
-    router.refresh();
-  }
-
   function refresh() {
     setRefreshing(true);
     router.refresh();
     setTimeout(() => setRefreshing(false), 800);
   }
 
-  const missingTable = errors.some((e) => e.startsWith("Analytics sessions"));
+  const firestoreError = errors.some((e) => e.startsWith("Visitor sessions"));
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
@@ -614,9 +607,6 @@ export default function AnalyticsClient({
           <Link href="/admin" className="btn-ghost !min-h-10 !px-4 !text-sm"><Package size={15} /> Orders</Link>
           <button onClick={refresh} className="btn-ghost !min-h-10 !px-4 !text-sm" aria-label="Refresh">
             <RefreshCw size={15} className={refreshing ? "animate-spin" : ""} />
-          </button>
-          <button onClick={logout} className="btn-ghost !min-h-10 !px-4 !text-sm" aria-label="Log out">
-            <LogOut size={15} />
           </button>
         </div>
       </div>
@@ -646,9 +636,9 @@ export default function AnalyticsClient({
           <ul className="text-sm text-[#1A1A1A]/70 list-disc pl-5">
             {errors.map((e) => <li key={e}>{e}</li>)}
           </ul>
-          {missingTable && (
+          {firestoreError && (
             <p className="text-sm text-[#1A1A1A]/60 mt-2">
-              Create the <code>analytics_sessions</code> table by running the new block in <code>supabase/schema.sql</code> in the Supabase SQL editor.
+              Visitor sessions are stored in Firestore. Check that <code>FIREBASE_SERVICE_ACCOUNT_KEY</code> is set for this environment.
             </p>
           )}
         </div>

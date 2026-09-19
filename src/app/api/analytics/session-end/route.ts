@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import type { DocumentReference } from "firebase-admin/firestore";
+import { ANALYTICS_COLLECTION, adminDb } from "@/lib/firebaseAdmin";
 import { esc, notifyTelegram } from "@/lib/telegram";
 import type { AnalyticsEvent, PageVisit, SessionPayload } from "@/lib/analytics";
 import { countryFlag, formatDuration, getClientContext, referrerHost } from "@/lib/analyticsServer";
@@ -31,13 +32,16 @@ export async function POST(req: NextRequest) {
   const ctx = getClientContext(req.headers);
   if (ctx.deviceType === "bot") return NextResponse.json({ ok: true });
 
-  const db = supabaseAdmin();
-  const { data: existingRow } = await db
-    .from("analytics_sessions")
-    .select("*")
-    .eq("session_id", sessionId)
-    .maybeSingle();
-  const existing = existingRow as AnalyticsSession | null;
+  // Analytics must never fail the request — the beacon is fire-and-forget.
+  let docRef: DocumentReference | null = null;
+  let existing: AnalyticsSession | null = null;
+  try {
+    docRef = adminDb().collection(ANALYTICS_COLLECTION).doc(sessionId);
+    const snapshot = await docRef.get();
+    existing = (snapshot.exists ? snapshot.data() : null) as AnalyticsSession | null;
+  } catch (err) {
+    console.error("Failed to read analytics session:", err);
+  }
 
   // Merge with any earlier snapshot — a full page load (e.g. Stripe's redirect
   // back to /checkout/return) restarts the tracker's in-memory page list.
@@ -112,11 +116,15 @@ export async function POST(req: NextRequest) {
     region: ctx.region ?? existing?.region ?? null,
     city: ctx.city ?? existing?.city ?? null,
     user_agent: str(ctx.userAgent, 500),
+    created_at: existing?.created_at ?? new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
 
-  const { error } = await db.from("analytics_sessions").upsert(row, { onConflict: "session_id" });
-  if (error) console.error("Failed to save analytics session:", error);
+  try {
+    await docRef?.set(row, { merge: true });
+  } catch (err) {
+    console.error("Failed to save analytics session:", err);
+  }
 
   // Notify once per session, plus once more if a returning snapshot reveals an abandoned checkout.
   const newlyAbandoned = reachedCheckout && !purchased && !existing?.reached_checkout;

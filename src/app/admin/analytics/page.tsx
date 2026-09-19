@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { supabaseAdmin } from "@/lib/supabase";
-import { isAnalyticsAuthed } from "@/lib/analyticsServer";
+import type { Query } from "firebase-admin/firestore";
+import { ANALYTICS_COLLECTION, adminDb } from "@/lib/firebaseAdmin";
 import { computeStats } from "@/lib/analyticsStats";
 import type { AnalyticsSession, EmailSubscriber, Order } from "@/lib/types";
 import AnalyticsClient, { type RangeKey, type RecentSession } from "./AnalyticsClient";
@@ -9,17 +11,46 @@ export const dynamic = "force-dynamic";
 
 const RANGES: Record<RangeKey, number | null> = { "1": 1, "7": 7, "30": 30, "90": 90, all: null };
 const PAGE_SIZE = 1000;
-const MAX_ROWS = 50_000;
+const MAX_ROWS = 20_000;
+
+/** Sessions live in Firestore; orders and subscribers stay in Supabase. */
+async function fetchSessions(since: string | null, until: string | null = null) {
+  try {
+    let q = adminDb()
+      .collection(ANALYTICS_COLLECTION)
+      .orderBy("started_at", "desc")
+      .limit(MAX_ROWS) as Query;
+    if (since) q = q.where("started_at", ">=", since);
+    if (until) q = q.where("started_at", "<", until);
+    const snap = await q.get();
+    return { rows: snap.docs.map((d) => d.data() as AnalyticsSession), error: null as string | null };
+  } catch (err) {
+    return { rows: [] as AnalyticsSession[], error: (err as Error).message };
+  }
+}
+
+async function countSessions(since: string, until: string) {
+  try {
+    const snap = await adminDb()
+      .collection(ANALYTICS_COLLECTION)
+      .where("started_at", ">=", since)
+      .where("started_at", "<", until)
+      .count()
+      .get();
+    return snap.data().count;
+  } catch {
+    return null;
+  }
+}
 
 // Supabase caps a single select at 1000 rows, so page through.
-async function fetchAll<T>(table: string, columns: string, since: string | null, until: string | null = null) {
+async function fetchSupabase<T>(table: string, columns: string, since: string | null, until: string | null = null) {
   const db = supabaseAdmin();
-  const dateCol = table === "analytics_sessions" ? "started_at" : "created_at";
   const rows: T[] = [];
   for (let from = 0; from < MAX_ROWS; from += PAGE_SIZE) {
-    let q = db.from(table).select(columns).order(dateCol, { ascending: false }).range(from, from + PAGE_SIZE - 1);
-    if (since) q = q.gte(dateCol, since);
-    if (until) q = q.lt(dateCol, until);
+    let q = db.from(table).select(columns).order("created_at", { ascending: false }).range(from, from + PAGE_SIZE - 1);
+    if (since) q = q.gte("created_at", since);
+    if (until) q = q.lt("created_at", until);
     const { data, error } = await q;
     if (error) return { rows, error: error.message };
     rows.push(...((data ?? []) as T[]));
@@ -33,7 +64,9 @@ export default async function AnalyticsPage({
 }: {
   searchParams: Promise<{ range?: string }>;
 }) {
-  if (!(await isAnalyticsAuthed())) redirect("/admin/analytics/login");
+  // Same gate as the orders dashboard — /admin is already password-protected.
+  const cookieStore = await cookies();
+  if (cookieStore.get("admin_auth")?.value !== "1") redirect("/admin/login");
 
   const { range: rawRange } = await searchParams;
   const range: RangeKey = rawRange && rawRange in RANGES ? (rawRange as RangeKey) : "30";
@@ -42,20 +75,18 @@ export default async function AnalyticsPage({
   const since = days ? new Date(now - days * 86_400_000).toISOString() : null;
   const prevSince = days ? new Date(now - 2 * days * 86_400_000).toISOString() : null;
 
-  const [sessionsRes, ordersRes, subsRes, prevSessionsRes, prevOrdersRes] = await Promise.all([
-    fetchAll<AnalyticsSession>("analytics_sessions", "*", since),
-    fetchAll<Order>("orders", "*", since),
-    fetchAll<EmailSubscriber>("email_subscribers", "*", since),
-    days
-      ? supabaseAdmin().from("analytics_sessions").select("id", { count: "exact", head: true }).gte("started_at", prevSince!).lt("started_at", since!)
-      : Promise.resolve(null),
-    days ? fetchAll<Order>("orders", "total, status", prevSince, since) : Promise.resolve(null),
+  const [sessionsRes, ordersRes, subsRes, prevSessionCount, prevOrdersRes] = await Promise.all([
+    fetchSessions(since),
+    fetchSupabase<Order>("orders", "*", since),
+    fetchSupabase<EmailSubscriber>("email_subscribers", "*", since),
+    days ? countSessions(prevSince!, since!) : Promise.resolve(null),
+    days ? fetchSupabase<Order>("orders", "total, status", prevSince, since) : Promise.resolve(null),
   ]);
 
   const previous =
-    prevSessionsRes && prevOrdersRes && !prevSessionsRes.error && !prevOrdersRes.error
+    prevSessionCount !== null && prevOrdersRes && !prevOrdersRes.error
       ? {
-          sessions: prevSessionsRes.count ?? 0,
+          sessions: prevSessionCount,
           orders: prevOrdersRes.rows.filter((o) => o.status !== "cancelled").length,
           revenue: prevOrdersRes.rows
             .filter((o) => o.status !== "cancelled")
@@ -112,7 +143,7 @@ export default async function AnalyticsPage({
   }));
 
   const errors = [
-    sessionsRes.error && `Analytics sessions: ${sessionsRes.error}`,
+    sessionsRes.error && `Visitor sessions (Firestore): ${sessionsRes.error}`,
     ordersRes.error && `Orders: ${ordersRes.error}`,
     subsRes.error && `Email subscribers: ${subsRes.error}`,
   ].filter(Boolean) as string[];

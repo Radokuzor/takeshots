@@ -1,6 +1,11 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // analytics_sessions is deliberately absent: it is written and read only by
+    // the Firebase Admin SDK (src/lib/firebaseAdmin.ts), which bypasses these
+    // rules. Firestore denies anything unmatched, so no client can read visitor
+    // data or forge sessions. Don't add a rule for it.
+
     match /games/{gameCode} {
       allow read: if true;
       allow create: if request.resource.data.keys().hasAll(

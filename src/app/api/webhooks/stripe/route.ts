@@ -4,6 +4,7 @@ import { stripe } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabase";
 import { esc, notifyTelegram, siteUrl } from "@/lib/telegram";
 import { countryFlag, formatDuration } from "@/lib/analyticsServer";
+import { ANALYTICS_COLLECTION, adminDb } from "@/lib/firebaseAdmin";
 import type { AnalyticsSession, OrderItem } from "@/lib/types";
 
 export async function POST(req: NextRequest) {
@@ -175,12 +176,20 @@ async function buildOrderMessage({
   // Visitor history from stored analytics (best-effort; the current session is
   // usually only written once the buyer leaves the tab).
   if (md.ts_visitor_id) {
-    const { data } = await db
-      .from("analytics_sessions")
-      .select("started_at, duration_ms, page_count")
-      .eq("visitor_id", md.ts_visitor_id)
-      .order("started_at", { ascending: true });
-    const sessions = (data ?? []) as Pick<AnalyticsSession, "started_at" | "duration_ms" | "page_count">[];
+    let sessions: Pick<AnalyticsSession, "started_at" | "duration_ms" | "page_count">[] = [];
+    try {
+      // Sorted in memory: an equality filter plus an orderBy on another field
+      // would need a composite index.
+      const snap = await adminDb()
+        .collection(ANALYTICS_COLLECTION)
+        .where("visitor_id", "==", md.ts_visitor_id)
+        .get();
+      sessions = snap.docs
+        .map((d) => d.data() as AnalyticsSession)
+        .sort((a, b) => a.started_at.localeCompare(b.started_at));
+    } catch (err) {
+      console.error("Analytics lookup failed:", err);
+    }
     if (sessions.length > 0) {
       const totalTime = sessions.reduce((n, s) => n + s.duration_ms, 0);
       const totalPages = sessions.reduce((n, s) => n + s.page_count, 0);

@@ -29,9 +29,7 @@ src/app/
   checkout/return/         Post-payment confirmation page (polls `/api/checkout/session-status`)
   admin/                  Order fulfillment dashboard only (`OrdersClient.tsx`) — gated by a cookie, not Clerk. noindex (layout.tsx).
   admin/login/             Password form → POST /api/admin/auth
-  admin/analytics/         Analytics dashboard (AnalyticsClient.tsx) — its own password gate (ANALYTICS_PASSWORD, default "test1234"), separate from ADMIN_PASSWORD
-ANALYTICS_PASSWORD        — optional, defaults to "test1234"
-  admin/analytics/login/   Password form → POST /api/admin/analytics-auth
+  admin/analytics/         Analytics dashboard (AnalyticsClient.tsx) — same admin_auth cookie gate as /admin; visitor sessions come from Firestore, orders/subscribers from Supabase
   privacy/, terms/         Static legal pages
   api/checkout/            Creates a Stripe PaymentIntent from the current buy-now item
   api/checkout/session-status/  Polled by /checkout/return to confirm payment succeeded
@@ -39,8 +37,7 @@ ANALYTICS_PASSWORD        — optional, defaults to "test1234"
   api/admin/auth/            Sets the admin_auth cookie
   api/admin/orders/          Reads orders for the admin dashboard
   api/webhooks/stripe/       Verifies signature, writes `orders` row, pings Telegram
-  api/analytics/session-end/ AnalyticsTracker beacon endpoint — upserts analytics_sessions (merging snapshots) and pings Telegram once per session
-  api/admin/analytics-auth/  Sets/clears the analytics_auth cookie (sha256 of the password, not a bare "1")
+  api/analytics/session-end/ AnalyticsTracker beacon endpoint — merges the snapshot into the Firestore analytics_sessions doc and pings Telegram once per session
   sitemap.ts, robots.ts      Static — just `/`, `/play`, `/about`, `/privacy`, `/terms`. No dynamic content to enumerate anymore.
   icon.tsx, apple-icon.tsx   Dynamically generated favicons (next/og)
 
@@ -56,7 +53,8 @@ src/lib/
   cart.ts                Zustand store holding just `buyNowItem` — no multi-item cart
   telegram.ts             notifyTelegram (HTML parse mode, prefixes the site name — pass visitor text through esc())
   analytics.ts            Client: trackEvent() (window "ts-track" event), attribution in sessionStorage, payload types
-  analyticsServer.ts      Server: UA parsing, geo from Vercel/Cloudflare headers, analytics password gate
+  analyticsServer.ts      Server: UA parsing, geo from Vercel/Cloudflare headers, duration/flag formatting
+  firebaseAdmin.ts        Server-only Firestore via firebase-admin + a service account (bypasses firestore.rules) — adminDb(), ANALYTICS_COLLECTION
   analyticsStats.ts       Pure stats computation for /admin/analytics
   types.ts                Product (trimmed — id/name/description/price/photo_url/created_at), EmailSubscriber, CartItem, OrderItem, ShippingAddress, Order, Database types
 
@@ -93,16 +91,17 @@ If you're asked to add user accounts, gate a customer-facing feature, or add rol
 - **articles** — also still in the schema (near-me/blog content), also completely unused by any route now. Orphaned, not deleted — see Known Gaps.
 - **email_subscribers** — `email` (unique), `source` (`hero`|`popup`|`footer`|`play_page`), `discount_claimed` (boolean field exists but **nothing ever sets it true** — no discount code system is implemented despite the funnel UI implying one).
 - **orders** — the only actively-used data table besides email_subscribers. Written by the Stripe webhook (`payment_intent.succeeded`), read by the admin dashboard. `items` is a jsonb array of `{product_id, name, price, quantity}` built from Stripe PaymentIntent metadata at checkout time, not a foreign key into `products`.
-- **analytics_sessions** — one row per browser-tab session (pages, events, scroll, UTM/referrer, device, geo, checkout/purchase flags). Written only by `/api/analytics/session-end` (service role), read by `/admin/analytics`. Checkout also forwards attribution into Stripe PaymentIntent metadata (`ts_*` keys) so the order Telegram message can show the sale's source.
 - **game_sessions** — placeholder, still unused; Firestore owns `/play` state, not this table.
 
 RLS: public SELECT on `products`/`articles` (both now moot since nothing queries them), public INSERT on `email_subscribers`. `orders`/`game_sessions` have RLS on with no public policies (service-role only).
 
 ## Firebase-backed Features
 
-Firestore is used for exactly one thing now:
+Firestore is used for two things now:
 
 **`/play` — "Most Likely To" party game.** Fully realtime (`onSnapshot` listeners), no page reloads: host creates a game (`games/{code}`), players join, vote each round (`games/{code}/rounds/{i}/votes/{playerId}`), scores tally live. No auth — a `localStorage`-persisted UUID (`src/lib/playerId.ts`) is the only identity, and `firestore.rules` are wide open (`allow write: if true`) since there's no auth to check against.
+
+**`analytics_sessions` — visitor analytics.** One doc per browser-tab session (doc id = session id) holding the page journey, click/custom events, scroll depth, UTM/referrer, device, geo and checkout/purchase flags. Written and read **only** through the Admin SDK (`src/lib/firebaseAdmin.ts`), which bypasses `firestore.rules` — so the collection has no rules block, and must not get one, or visitor data becomes world-readable and forgeable (`firebase-admin` needs the optional peer dep `@google-cloud/firestore`, which is installed). `AnalyticsTracker` beacons a snapshot on every tab-hide and the server merges it into the existing doc. Checkout forwards attribution into Stripe PaymentIntent metadata (`ts_*` keys) so the order Telegram message can show the sale’s source.
 
 The `shot_content` collection (an AI-generated blog-guide feature, formerly surfaced on `/blog`) was removed along with the blog. Its Firestore rules block was deleted, but the collection itself may still contain old documents — Firestore doesn't clean up on rule removal, so if you're auditing Firestore data directly, expect to find it and know it's dead.
 
@@ -132,6 +131,7 @@ NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_K
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
 TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 ADMIN_PASSWORD
+FIREBASE_SERVICE_ACCOUNT_KEY  — service-account JSON (raw or base64) for firebase-admin; required by /admin/analytics and the session beacon
 SCRAPERAPI_KEY            — unused now, see Known Gaps
 ANTHROPIC_API_KEY         — unused now, see Known Gaps
 NEXT_PUBLIC_SITE_URL

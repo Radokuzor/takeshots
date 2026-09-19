@@ -1,6 +1,3 @@
-import { createHash } from "crypto";
-import { cookies } from "next/headers";
-
 // ── Request context (device + location) ─────────────────────────────────────
 
 export interface ClientContext {
@@ -87,24 +84,4 @@ export function formatDuration(ms: number) {
 export function countryFlag(code: string | null | undefined) {
   if (!code || !/^[A-Z]{2}$/i.test(code)) return "";
   return String.fromCodePoint(...[...code.toUpperCase()].map((c) => 0x1f1a5 + c.charCodeAt(0)));
-}
-
-// ── Analytics dashboard password gate ───────────────────────────────────────
-// Separate from ADMIN_PASSWORD. The cookie holds a hash of the password rather
-// than a bare "1", so it can't be forged without knowing the password, and
-// changing the password logs everyone out.
-
-export const ANALYTICS_COOKIE = "analytics_auth";
-
-export function analyticsPassword() {
-  return process.env.ANALYTICS_PASSWORD || "test1234";
-}
-
-export function analyticsToken() {
-  return createHash("sha256").update(`takeshots-analytics:${analyticsPassword()}`).digest("hex");
-}
-
-export async function isAnalyticsAuthed() {
-  const cookieStore = await cookies();
-  return cookieStore.get(ANALYTICS_COOKIE)?.value === analyticsToken();
 }
