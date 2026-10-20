@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { supabaseAdmin } from "@/lib/supabase";
 import type { Query } from "firebase-admin/firestore";
-import { ANALYTICS_COLLECTION, adminDb } from "@/lib/firebaseAdmin";
+import { ANALYTICS_COLLECTION, ORDERS_COLLECTION, SUBSCRIBERS_COLLECTION, adminDb } from "@/lib/firebaseAdmin";
 import { computeStats } from "@/lib/analyticsStats";
 import type { AnalyticsSession, EmailSubscriber, Order } from "@/lib/types";
 import AnalyticsClient, { type RangeKey, type RecentSession } from "./AnalyticsClient";
@@ -10,10 +9,9 @@ import AnalyticsClient, { type RangeKey, type RecentSession } from "./AnalyticsC
 export const dynamic = "force-dynamic";
 
 const RANGES: Record<RangeKey, number | null> = { "1": 1, "7": 7, "30": 30, "90": 90, all: null };
-const PAGE_SIZE = 1000;
 const MAX_ROWS = 20_000;
 
-/** Sessions live in Firestore; orders and subscribers stay in Supabase. */
+/** Sessions, orders and subscribers all live in Firestore (Admin SDK). */
 async function fetchSessions(since: string | null, until: string | null = null) {
   try {
     let q = adminDb()
@@ -43,20 +41,16 @@ async function countSessions(since: string, until: string) {
   }
 }
 
-// Supabase caps a single select at 1000 rows, so page through.
-async function fetchSupabase<T>(table: string, columns: string, since: string | null, until: string | null = null) {
-  const db = supabaseAdmin();
-  const rows: T[] = [];
-  for (let from = 0; from < MAX_ROWS; from += PAGE_SIZE) {
-    let q = db.from(table).select(columns).order("created_at", { ascending: false }).range(from, from + PAGE_SIZE - 1);
-    if (since) q = q.gte("created_at", since);
-    if (until) q = q.lt("created_at", until);
-    const { data, error } = await q;
-    if (error) return { rows, error: error.message };
-    rows.push(...((data ?? []) as T[]));
-    if (!data || data.length < PAGE_SIZE) break;
+async function fetchByCreatedAt<T>(collection: string, since: string | null, until: string | null = null) {
+  try {
+    let q = adminDb().collection(collection).orderBy("created_at", "desc").limit(MAX_ROWS) as Query;
+    if (since) q = q.where("created_at", ">=", since);
+    if (until) q = q.where("created_at", "<", until);
+    const snap = await q.get();
+    return { rows: snap.docs.map((d) => d.data() as T), error: null as string | null };
+  } catch (err) {
+    return { rows: [] as T[], error: (err as Error).message };
   }
-  return { rows, error: null as string | null };
 }
 
 export default async function AnalyticsPage({
@@ -77,10 +71,10 @@ export default async function AnalyticsPage({
 
   const [sessionsRes, ordersRes, subsRes, prevSessionCount, prevOrdersRes] = await Promise.all([
     fetchSessions(since),
-    fetchSupabase<Order>("orders", "*", since),
-    fetchSupabase<EmailSubscriber>("email_subscribers", "*", since),
+    fetchByCreatedAt<Order>(ORDERS_COLLECTION, since),
+    fetchByCreatedAt<EmailSubscriber>(SUBSCRIBERS_COLLECTION, since),
     days ? countSessions(prevSince!, since!) : Promise.resolve(null),
-    days ? fetchSupabase<Order>("orders", "total, status", prevSince, since) : Promise.resolve(null),
+    days ? fetchByCreatedAt<Order>(ORDERS_COLLECTION, prevSince, since) : Promise.resolve(null),
   ]);
 
   const previous =

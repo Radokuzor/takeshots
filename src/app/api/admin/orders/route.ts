@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { supabaseAdmin } from "@/lib/supabase";
+import { ORDERS_COLLECTION, adminDb } from "@/lib/firebaseAdmin";
 
 const STATUSES = ["pending", "fulfilled", "cancelled"] as const;
 
@@ -15,7 +15,10 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 
-  const { error } = await supabaseAdmin().from("orders").update({ status }).eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  try {
+    await adminDb().collection(ORDERS_COLLECTION).doc(String(id)).update({ status });
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { supabaseAdmin } from "@/lib/supabase";
+import { ORDERS_COLLECTION, adminDb } from "@/lib/firebaseAdmin";
 import type { Order } from "@/lib/types";
 import OrdersClient from "./OrdersClient";
 
@@ -10,10 +10,14 @@ export default async function AdminPage() {
   const cookieStore = await cookies();
   if (cookieStore.get("admin_auth")?.value !== "1") redirect("/admin/login");
 
-  const { data, error } = await supabaseAdmin()
-    .from("orders")
-    .select("*")
-    .order("created_at", { ascending: false });
+  let orders: Order[] = [];
+  let error: Error | null = null;
+  try {
+    const snap = await adminDb().collection(ORDERS_COLLECTION).orderBy("created_at", "desc").get();
+    orders = snap.docs.map((d) => d.data() as Order);
+  } catch (err) {
+    error = err as Error;
+  }
 
   if (error) {
     return (
@@ -23,14 +27,13 @@ export default async function AdminPage() {
           <p className="font-bold text-red-600 mb-1">Couldn&apos;t load orders.</p>
           <p className="text-[#1A1A1A]/60">{error.message}</p>
           <p className="text-[#1A1A1A]/60 mt-2">
-            Make sure the <code>orders</code> table exists in this Supabase project (with the{" "}
-            <code>customer_name</code>, <code>phone</code>, and <code>shipping</code> columns) and{" "}
-            <code>SUPABASE_SERVICE_ROLE_KEY</code> is set.
+            Orders are stored in the Firestore <code>orders</code> collection — make sure{" "}
+            <code>FIREBASE_SERVICE_ACCOUNT_KEY</code> is set.
           </p>
         </div>
       </div>
     );
   }
 
-  return <OrdersClient orders={(data as Order[]) ?? []} />;
+  return <OrdersClient orders={orders} />;
 }

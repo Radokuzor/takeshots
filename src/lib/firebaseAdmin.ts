@@ -46,3 +46,7 @@ function serviceAccountKey() {
 }
 
 export const ANALYTICS_COLLECTION = "analytics_sessions";
+/** Doc id === Stripe PaymentIntent id, so a re-delivered webhook can't double-write. */
+export const ORDERS_COLLECTION = "orders";
+/** Doc id === lower-cased email, so re-subscribing just updates the existing doc. */
+export const SUBSCRIBERS_COLLECTION = "email_subscribers";

@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
-import { supabaseAdmin } from "@/lib/supabase";
 import { esc, notifyTelegram, siteUrl } from "@/lib/telegram";
 import { countryFlag, formatDuration } from "@/lib/analyticsServer";
-import { ANALYTICS_COLLECTION, adminDb } from "@/lib/firebaseAdmin";
-import type { AnalyticsSession, OrderItem } from "@/lib/types";
+import { ANALYTICS_COLLECTION, ORDERS_COLLECTION, adminDb } from "@/lib/firebaseAdmin";
+import type { AnalyticsSession, Order, OrderItem } from "@/lib/types";
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -52,7 +51,8 @@ export async function POST(req: NextRequest) {
 
     const addr = shipping?.address;
 
-    const { error } = await supabaseAdmin().from("orders").insert({
+    const order: Order = {
+      id: paymentIntent.id,
       customer_email: email ?? "unknown",
       customer_name: shipping?.name ?? null,
       phone: shipping?.phone ?? null,
@@ -70,16 +70,23 @@ export async function POST(req: NextRequest) {
       items,
       total: paymentIntent.amount / 100,
       status: "pending",
-    });
+      created_at: new Date(paymentIntent.created * 1000).toISOString(),
+    };
 
-    // 23505 = unique violation on stripe_payment_id — a duplicate webhook
-    // delivery we've already saved and announced.
-    if (error?.code === "23505") return NextResponse.json({ received: true });
+    // create() fails with ALREADY_EXISTS (code 6) when the doc is there — a
+    // duplicate webhook delivery we've already saved and announced.
+    let error: Error | null = null;
+    try {
+      await adminDb().collection(ORDERS_COLLECTION).doc(order.id).create(order);
+    } catch (err) {
+      if ((err as { code?: number }).code === 6) return NextResponse.json({ received: true });
+      error = err as Error;
+    }
 
     if (error) {
       console.error("Failed to save order:", error);
       await notifyTelegram(
-        `⚠️ <b>Order save FAILED</b> for ${esc(paymentIntent.id)}\n${esc(error.message)}\nCheck Supabase — payment went through but the order row was not written.`
+        `⚠️ <b>Order save FAILED</b> for ${esc(paymentIntent.id)}\n${esc(error.message)}\nCheck Firestore — payment went through but the order row was not written.`
       );
     }
 
@@ -171,8 +178,6 @@ async function buildOrderMessage({
     attr.push(`  ${md.ts_visit_number === "1" ? "First visit" : `Visit #${esc(md.ts_visit_number)}`}`);
   }
 
-  const db = supabaseAdmin();
-
   // Visitor history from stored analytics (best-effort; the current session is
   // usually only written once the buyer leaves the tab).
   if (md.ts_visitor_id) {
@@ -204,17 +209,14 @@ async function buildOrderMessage({
   // Running totals + repeat-customer check.
   const startOfDay = new Date();
   startOfDay.setUTCHours(0, 0, 0, 0);
-  const [{ data: all }, { data: prior }] = await Promise.all([
-    db.from("orders").select("total, created_at").neq("status", "cancelled"),
-    email
-      ? db.from("orders").select("id").eq("customer_email", email).neq("stripe_payment_id", paymentIntent.id)
-      : Promise.resolve({ data: [] as { id: string }[] }),
-  ]);
-  const rows = (all ?? []) as { total: number; created_at: string }[];
+  const allOrders = (await adminDb().collection(ORDERS_COLLECTION).get()).docs.map((d) => d.data() as Order);
+  const rows = allOrders.filter((o) => o.status !== "cancelled");
   if (rows.length > 0) {
     const sum = (rs: typeof rows) => rs.reduce((n, r) => n + Number(r.total), 0);
     const today = rows.filter((r) => Date.parse(r.created_at) >= startOfDay.getTime());
-    const priorCount = prior?.length ?? 0;
+    const priorCount = email
+      ? allOrders.filter((o) => o.customer_email === email && o.id !== paymentIntent.id).length
+      : 0;
     lines.push(
       "",
       "📊 <b>Totals</b>",

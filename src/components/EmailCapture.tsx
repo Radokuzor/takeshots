@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
 import { trackEvent } from "@/lib/analytics";
 
 interface Props {
@@ -16,12 +15,15 @@ export default function EmailCapture({ source, dark = false }: Props) {
     e.preventDefault();
     if (!email) return;
     setStatus("loading");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
-      .from("email_subscribers")
-      .upsert({ email, source, discount_claimed: false }, { onConflict: "email" });
-    if (!error) trackEvent("email_signup", { source });
-    setStatus(error ? "error" : "done");
+    const ok = await fetch("/api/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, source }),
+    })
+      .then((r) => r.ok)
+      .catch(() => false);
+    if (ok) trackEvent("email_signup", { source });
+    setStatus(ok ? "done" : "error");
   }
 
   if (status === "done") {

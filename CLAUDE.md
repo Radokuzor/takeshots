@@ -7,9 +7,9 @@ Read this before making changes — it covers the stack, where things live, the 
 ## Stack
 
 - **Next.js 16** (App Router), React 19, TypeScript
-- **Supabase** (Postgres) — no ORM, raw `supabase-js` calls. `src/lib/supabase.ts` exports `supabase` (anon key, client-safe) and `supabaseAdmin()` (service role, server-only). Used for the `products` table (legacy — see Data Model), `email_subscribers`, and `orders`.
+- **Supabase** (Postgres) — no ORM, raw `supabase-js` calls. `src/lib/supabase.ts` exports `supabase` (anon key, client-safe) and `supabaseAdmin()` (service role, server-only). **No longer used by any code** — the project (`bgavdnmrxhgguodfrfma`) stopped resolving in Oct 2026, so `orders` and `email_subscribers` moved to Firestore. The client file and schema are left in place as history.
 - **Firebase (Firestore)** — used only for the realtime `/play` party game now. `src/lib/firebase.ts` exports the client SDK `db`, used client- and server-side alike. `firestore.rules` are open (`allow read, write: if true`) since there's no auth system.
-- **Stripe** — Checkout is built directly with `@stripe/react-stripe-js` Elements (PaymentIntent-based, not Stripe Checkout Sessions) on `/checkout`. A webhook handler at `src/app/api/webhooks/stripe/route.ts` listens for `payment_intent.succeeded`, writes a row to `orders`, and pings Telegram (`TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID`) with the order summary.
+- **Stripe** — Checkout is built directly with `@stripe/react-stripe-js` Elements (PaymentIntent-based, not Stripe Checkout Sessions) on `/checkout`. A webhook handler at `src/app/api/webhooks/stripe/route.ts` listens for `payment_intent.succeeded`, writes a doc to the Firestore `orders` collection (doc id = PaymentIntent id), and pings Telegram (`TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID`) with the order summary. **The Stripe webhook endpoint must be subscribed to `payment_intent.succeeded`** — it was once set to only `checkout.session.completed`, which silently dropped every order.
 - **Clerk** — installed and wraps the app (`ClerkProvider` in `src/app/layout.tsx`) but **not used for anything**. No middleware, no protected routes, no sign-in UI. Treat it as dead code unless you're the one implementing real user auth.
 - **Zustand** — `src/lib/cart.ts` holds only `buyNowItem` (a single `{product, quantity}`), set by the homepage's "Buy Now" button right before navigating to `/checkout`. There is no multi-item cart or cart drawer anymore — one product, one purchase flow.
 - **Tailwind CSS v4** — imported via `@import "tailwindcss"` in `globals.css`; `tailwind.config.ts` still carries v3-style `theme.extend` (colors/radius) alongside it. Both are in effect.
@@ -29,14 +29,14 @@ src/app/
   checkout/return/         Post-payment confirmation page (polls `/api/checkout/session-status`)
   admin/                  Order fulfillment dashboard only (`OrdersClient.tsx`) — gated by a cookie, not Clerk. noindex (layout.tsx).
   admin/login/             Password form → POST /api/admin/auth
-  admin/analytics/         Analytics dashboard (AnalyticsClient.tsx) — same admin_auth cookie gate as /admin; visitor sessions come from Firestore, orders/subscribers from Supabase
+  admin/analytics/         Analytics dashboard (AnalyticsClient.tsx) — same admin_auth cookie gate as /admin; sessions, orders and subscribers all come from Firestore
   privacy/, terms/         Static legal pages
   api/checkout/            Creates a Stripe PaymentIntent from the current buy-now item
   api/checkout/session-status/  Polled by /checkout/return to confirm payment succeeded
-  api/subscribe/           Upserts into email_subscribers (discount popup / footer capture)
+  api/subscribe/           Creates a Firestore email_subscribers doc (id = lower-cased email); EmailCapture posts here
   api/admin/auth/            Sets the admin_auth cookie
-  api/admin/orders/          Reads orders for the admin dashboard
-  api/webhooks/stripe/       Verifies signature, writes `orders` row, pings Telegram
+  api/admin/orders/          PATCHes order status (Firestore)
+  api/webhooks/stripe/       Verifies signature, writes `orders` doc, pings Telegram
   api/analytics/session-end/ AnalyticsTracker beacon endpoint — merges the snapshot into the Firestore analytics_sessions doc and pings Telegram once per session
   sitemap.ts, robots.ts      Static — just `/`, `/play`, `/about`, `/privacy`, `/terms`. No dynamic content to enumerate anymore.
   icon.tsx, apple-icon.tsx   Dynamically generated favicons (next/og)
@@ -97,7 +97,9 @@ RLS: public SELECT on `products`/`articles` (both now moot since nothing queries
 
 ## Firebase-backed Features
 
-Firestore is used for two things now:
+Firestore is used for three things now:
+
+**`orders` + `email_subscribers` — the store's data.** Moved here from Supabase (Oct 2026). Server-only via the Admin SDK (`adminDb()`, `ORDERS_COLLECTION`, `SUBSCRIBERS_COLLECTION`), so like analytics they must not get a rules block. Order docs have the `Order` shape from `types.ts` with `id` = Stripe PaymentIntent id; the webhook uses `create()` so duplicate deliveries are no-ops. `scripts/backfill-orders.mjs` copies succeeded Stripe payments into `orders` (dry run by default, `--write` to save).
 
 **`/play` — "Most Likely To" party game.** Fully realtime (`onSnapshot` listeners), no page reloads: host creates a game (`games/{code}`), players join, vote each round (`games/{code}/rounds/{i}/votes/{playerId}`), scores tally live. No auth — a `localStorage`-persisted UUID (`src/lib/playerId.ts`) is the only identity, and `firestore.rules` are wide open (`allow write: if true`) since there's no auth to check against.
 
