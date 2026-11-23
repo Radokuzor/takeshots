@@ -9,6 +9,24 @@ import type { AnalyticsSession } from "@/lib/types";
 const pageKey = (p: PageVisit) => `${p.enteredAt}|${p.path}`;
 const eventKey = (e: AnalyticsEvent) => `${e.at}|${e.name}|${e.path}`;
 
+/**
+ * Telegram only gets a visitor ping on every Nth stored session — one message
+ * per 50 visitors instead of one per visitor. Purchases still notify from the
+ * Stripe webhook, which this throttle does not touch.
+ */
+const NOTIFY_EVERY = 50;
+
+/** Number of sessions stored so far. Null means the count failed (stay quiet). */
+async function storedSessionCount(): Promise<number | null> {
+  try {
+    const snapshot = await adminDb().collection(ANALYTICS_COLLECTION).count().get();
+    return snapshot.data().count;
+  } catch (err) {
+    console.error("Failed to count analytics sessions:", err);
+    return null;
+  }
+}
+
 function str(v: unknown, max = 300) {
   return typeof v === "string" && v.length > 0 ? v.slice(0, max) : null;
 }
@@ -130,6 +148,12 @@ export async function POST(req: NextRequest) {
   const newlyAbandoned = reachedCheckout && !purchased && !existing?.reached_checkout;
   if (existing && !newlyAbandoned) return NextResponse.json({ ok: true });
 
+  // Throttle: only every 50th stored session is worth a Telegram message.
+  const sessionNumber = await storedSessionCount();
+  if (sessionNumber === null || sessionNumber % NOTIFY_EVERY !== 0) {
+    return NextResponse.json({ ok: true });
+  }
+
   const pathChain = pages.map((p) => esc(p.path)).join(" → ");
   const perPage = pages
     .slice(0, 12)
@@ -154,11 +178,13 @@ export async function POST(req: NextRequest) {
 
   const location = [row.city, row.region, row.country].filter(Boolean).join(", ");
   const utmText = [row.utm_source, row.utm_medium, row.utm_campaign].filter(Boolean).join(" / ");
-  const headline = reachedCheckout && !purchased
-    ? "⚠️ <b>Checkout abandoned</b>"
-    : purchased
-      ? "💰 <b>Visitor session (purchased)</b>"
-      : "👀 <b>Visitor session</b>";
+  const headline = `${
+    reachedCheckout && !purchased
+      ? "⚠️ <b>Checkout abandoned</b>"
+      : purchased
+        ? "💰 <b>Visitor session (purchased)</b>"
+        : "👀 <b>Visitor session</b>"
+  } · visitor #${sessionNumber}`;
 
   const lines = [
     headline,
